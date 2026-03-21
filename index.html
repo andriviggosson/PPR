@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kríta – Innra kerfi</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.6/dist/umd/supabase.js"></script>
 <style>
-/* ===== CRM CSS ===== */
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -230,7 +229,7 @@ tbody tr:hover td{background:var(--light);cursor:pointer}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
 
 
-/* ===== LEIGUKAUP CSS ===== */
+/* LEIGA CSS */
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -300,9 +299,7 @@ tbody tr:hover td{background:var(--light)}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body{background:white;font-size:10pt;margin:0}
   @page{margin:1.2cm;size:A4;margin-header:0;margin-footer:0}
-  .nav{display:none!important}
   .no-print{display:none!important}
-  #lq-tabs{display:none!important}
   .app{padding:0;max-width:100%}
   #panel-client{margin:0!important}
   #panel-calculator,#panel-saved{display:none!important}
@@ -318,58 +315,53 @@ tbody tr:hover td{background:var(--light)}
 }
 
 
-/* ===== COMBINED ===== */
-/* nav always visible */
-body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
-/* Keep tabs visible in client view */
+/* NAV always visible in leigukaup */
+body.in-leigukaup .nav .nav-link { opacity: 0.7; }
+body.in-leigukaup.lq-client-view .lq-header { display:none!important; }
 
-@keyframes spin{to{transform:rotate(360deg)}}
-/* MOBILE RESPONSIVE */
+/* MOBILE */
 @media (max-width: 768px) {
-  .nav { padding: 0 1rem; gap: 4px; }
+  .nav { padding: 0 0.75rem; flex-wrap: wrap; height: auto; min-height: 52px; }
   .nav-link { padding: 4px 8px; font-size: 12px; }
   .page { padding: 1rem; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
-  .two-col { grid-template-columns: 1fr; }
-  table { font-size: 12px; }
-  th, td { padding: 6px 8px; }
-  .modal { width: 95%; padding: 1rem; }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .modal { width: 95%; }
   .modal-grid { grid-template-columns: 1fr; }
-  .crm-risk-header { flex-direction: column; }
-  .attention-grid { grid-template-columns: 1fr; }
-  .nav-right { gap: 4px; }
-  .nav-btn { padding: 5px 8px; font-size: 11px; }
-  #langBtn { padding: 5px 8px; font-size: 11px; }
 }
-/* PRINT — combined app: fela allt nema tilboðsskjalið */
+
+/* PRINT */
+@keyframes spin { to { transform: rotate(360deg); } }
 @media print {
-  .nav, .header.no-print, .tabs.no-print, .no-print { display:none!important }
-  .page { display:none!important }
-  #page-leigukaup { display:block!important; padding:0 }
-  #panel-calculator, #panel-saved { display:none!important }
-  #panel-client { display:block!important }
+  * { -webkit-print-color-adjust: exact!important; print-color-adjust: exact!important; }
+  body { background: white; font-size: 10pt; }
+  @page { margin: 1.2cm; size: A4; }
+  .nav, .no-print { display: none!important; }
+  .app { padding: 0; max-width: 100%; }
+  .page { display: none!important; }
+  #page-leigukaup { display: block!important; padding: 0; }
+  #panel-calculator, #panel-saved { display: none!important; }
+  #panel-client { display: block!important; }
+  .page-break { page-break-before: always; break-before: page; }
+  .ps { page-break-inside: avoid; }
 }
+
 </style>
 </head>
 <body>
 
-<!-- LOGIN MODAL -->
 <div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#0d3320;z-index:9999;align-items:center;justify-content:center;flex-direction:column">
-  <div style="background:white;border-radius:12px;padding:2.5rem;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
-    <div style="text-align:center;margin-bottom:1.5rem">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="margin-bottom:12px">
-        <path d="M26 7L14 20l12 13" stroke="#0d3320" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <div style="font-size:22px;font-weight:800;color:#0d3320">Kríta</div>
-      <div style="font-size:13px;color:#5a7a65;margin-top:4px">Skráðu þig inn</div>
-    </div>
+  <div style="background:white;border-radius:12px;padding:2.5rem;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center">
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style="margin-bottom:12px"><path d="M29 8L15 22l14 14" stroke="#0d3320" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div style="font-size:24px;font-weight:800;color:#0d3320;margin-bottom:4px">Kríta</div>
+    <div style="font-size:13px;color:#5a7a65;margin-bottom:1.5rem">Skráðu þig inn</div>
     <div id="loginError" style="display:none;background:#fee2e2;color:#991b1b;padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:12px"></div>
     <div style="display:flex;flex-direction:column;gap:10px">
-      <input id="loginEmail" type="email" placeholder="Netfang" style="padding:10px 14px;border:1px solid #c8ddd0;border-radius:8px;font-size:14px;outline:none;width:100%"/>
-      <input id="loginPassword" type="password" placeholder="Lykilorð" style="padding:10px 14px;border:1px solid #c8ddd0;border-radius:8px;font-size:14px;outline:none;width:100%"/>
-      <button onclick="doLogin()" style="background:#0d3320;color:white;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%">Skrá inn</button>
+      <input id="loginEmail" type="email" placeholder="Netfang" style="padding:11px 14px;border:1.5px solid #c8ddd0;border-radius:8px;font-size:14px;outline:none;width:100%;box-sizing:border-box"/>
+      <input id="loginPassword" type="password" placeholder="Lykilorð" onkeydown="if(event.key==='Enter')doLogin()" style="padding:11px 14px;border:1.5px solid #c8ddd0;border-radius:8px;font-size:14px;outline:none;width:100%;box-sizing:border-box"/>
+      <button onclick="doLogin()" style="background:#0d3320;color:white;border:none;padding:13px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%">Skrá inn</button>
     </div>
-    <div style="text-align:center;margin-top:12px;font-size:12px;color:#5a7a65">Kríta hf. — Innra kerfi</div>
+    <div style="margin-top:16px;font-size:11px;color:#8db89e">Kríta hf. — Innra kerfi v2.0</div>
   </div>
 </div>
 
@@ -384,8 +376,8 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
   <button class="nav-link" id="nav-contracts" onclick="showPage('contracts')">Samningar</button>
   <button class="nav-link" id="nav-clients" onclick="showPage('clients')">Viðskiptavinir</button>
   <div class="nav-right">
+    <button class="nav-btn" style="background:rgba(255,255,255,0.15)" onclick="showPage('leigukaup')">📄 Senda tilboð</button>
     <button id="langBtn" onclick="toggleLang()" style="background:rgba(255,255,255,0.12);color:white;border:1px solid rgba(255,255,255,0.25);padding:6px 12px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer">🌐 EN</button>
-    <button class="nav-btn" style="background:rgba(255,255,255,0.15);margin-right:4px" onclick="showPage('leigukaup')">📄 Senda tilboð</button>
     <button class="nav-btn" onclick="openNewContract()" id="btn-new-contract">+ Nýr samningur</button>
   </div>
 </nav>
@@ -585,67 +577,67 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
 <div class="modal-overlay" id="contractModal">
   <div class="modal">
     <div class="modal-title">
-      <span id="contractModalTitle">Nýr samningur</span>
+      <span id="contractModalTitle">New Contract</span>
       <button class="modal-close" onclick="closeModal('contractModal')">&#10005;</button>
     </div>
     <div class="form-grid">
       <div class="form-group form-full">
-        <label>Tilvísun (PPR-)</label>
+        <label>Reference (PPR-)</label>
         <input id="cf-ref" type="text" placeholder="t.d. PPR-006"/>
       </div>
       <div class="form-group">
-        <label>Leigjandi</label>
+        <label>Tenant</label>
         <input id="cf-tenant" type="text" placeholder="Nafn leigjanda"/>
       </div>
       <div class="form-group">
-        <label>Kennitala leigjanda</label>
+        <label>Tenant ID (kennitala)</label>
         <input id="cf-tenantKt" type="text" placeholder="000000-0000"/>
       </div>
       <div class="form-group">
-        <label>Leigusali</label>
+        <label>Landlord</label>
         <input id="cf-landlord" type="text" placeholder="Nafn leigusala"/>
       </div>
       <div class="form-group">
-        <label>Kennitala leigusala</label>
+        <label>Landlord ID (kennitala)</label>
         <input id="cf-landlordKt" type="text" placeholder="000000-0000"/>
       </div>
       <div class="form-group">
-        <label>Heimilisfang eignar</label>
+        <label>Property Address</label>
         <input id="cf-address" type="text" placeholder="t.d. Borgartún 26"/>
       </div>
       <div class="form-group">
-        <label>Útgreitt til leigusala (ISK)</label>
+        <label>Disbursed to Landlord (ISK)</label>
         <input id="cf-amount" type="number" placeholder="0"/>
       </div>
       <div class="form-group">
-        <label>Mánaðarleiga (ISK)</label>
+        <label>Monthly Rent (ISK)</label>
         <input id="cf-rent" type="number" placeholder="0"/>
       </div>
       <div class="form-group">
-        <label>Fjöldi mánaða</label>
+        <label>No. of Months</label>
         <input id="cf-months" type="number" placeholder="12" value="12"/>
       </div>
       <div class="form-group">
-        <label>Upphafsdagur</label>
+        <label>Start Date</label>
         <input id="cf-startDate" type="date"/>
       </div>
       <div class="form-group">
-        <label>Staða</label>
+        <label>Status</label>
         <select id="cf-status">
-          <option value="active">Virkur</option>
-          <option value="pending">Í vinnslu</option>
-          <option value="done">Lokið</option>
-          <option value="overdue">Vanskil</option>
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="done">Closed</option>
+          <option value="overdue">Overdue</option>
         </select>
       </div>
       <div class="form-group form-full">
-        <label>Athugasemdir</label>
-        <textarea id="cf-notes" placeholder="Athugasemdir..."></textarea>
+        <label>Notes</label>
+        <textarea id="cf-notes" placeholder="Notes..."></textarea>
       </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:8px">
-      <button class="btn" onclick="closeModal('contractModal')">Hætta við</button>
-      <button class="btn btn-dark" onclick="saveContract()">Vista samning</button>
+      <button class="btn" onclick="closeModal('contractModal')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveContract()">Save Contract</button>
     </div>
   </div>
 </div>
@@ -684,23 +676,6 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
 
 
 
-</div>
-
-<div id="toast"></div>
-
-
-
-
-<div id="toast"></div>
-
-
-
-</div>
-
-<div id="toast"></div>
-
-
-
 <div id="page-leigukaup" class="page" style="padding:0">
 <div class="app">
 
@@ -714,7 +689,6 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
   </a>
   <div class="header-sep"></div>
   <span class="header-sub">Fyrirframgreidd leiga</span>
-  <button onclick="showPage('dashboard')" style="margin-left:auto;background:rgba(255,255,255,0.12);color:white;border:1px solid rgba(255,255,255,0.25);padding:5px 12px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer">← Til baka í CRM</button>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
     <span style="color:rgba(255,255,255,0.5);font-size:12px">ISK/EUR:</span>
     <input id="fxRate" type="number" value="145" step="0.5" min="100" max="300"
@@ -723,10 +697,10 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
   </div>
 </div>
 
-<div class="tabs" id="lq-tabs">
+<div class="tabs no-print">
   <button class="tab active" onclick="lq_switchTab('calculator')">Reikningur</button>
   <button class="tab" onclick="lq_switchTab('saved')">Vistaðir reikningar</button>
-  <button class="tab" onclick="lq_switchTab('client')">Tilboðsyfirlit</button>
+  <button class="tab" onclick="lq_switchTab('client')">Client view</button>
 </div>
 
 <!-- CALCULATOR -->
@@ -804,7 +778,7 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
       <div style="display:flex;align-items:center;gap:8px">
         <span id="savedCount" style="font-size:12px;color:var(--text2)"></span>
         <button class="btn btn-sm" id="selAllBtn" onclick="toggleSelectAll()" style="display:none">Velja alla</button>
-        <button class="btn btn-sm btn-danger" id="clearAllBtn" onclick="if(confirm('Hreinsa alla vistaða reikninga?')){localStorage.removeItem('krita_quotes');selectedIds.clear();loadSaved()}" style="display:none">Hreinsa allt</button>
+        <button class="btn btn-sm btn-danger" id="clearAllBtn" onclick="if(confirm('Hreinsa alla vistaða reikninga?')){_storage.removeItem('krita_quotes');lq_selectedIds.clear();lq_loadSaved()}" style="display:none">Hreinsa allt</button>
       </div>
     </div>
     <div id="savedList"></div>
@@ -817,8 +791,7 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
   <div class="no-print" style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <button class="btn btn-dark" onclick="window.print()">&#128438; Prenta / Vista sem PDF</button>
     <button class="btn btn-outline" id="emailBtn" onclick="lq_sendEmail()">&#9993; Senda í tölvupósti</button>
-    <button class="btn btn-green" id="markSentBtn" onclick="lq_markAsSent()" style="display:none;background:#0d3320;color:white;border-color:#0d3320;padding:8px 20px;font-size:13px;font-weight:700">✅ Samþykkja tilboð → CRM</button>
-    <button class="btn" onclick="showPage('dashboard')">📊 Opna CRM</button>
+    <button class="btn btn-outline" id="markSentBtn" onclick="lq_markAsSent()" style="display:none">✓ Merkja sem sent → CRM</button>
     <button class="btn" onclick="lq_switchTab('calculator')">&#8592; Til baka</button>
     <span style="font-size:11px;color:var(--text2)">Til að fela slóð í footer: Chrome &#8594; More settings &#8594; slökkva á Headers and footers</span>
   </div>
@@ -829,26 +802,120 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
 </div>
 </div>
 
+<!-- ============ CONTRACT MODAL ============ -->
+<div class="modal-overlay" id="contractModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="contractModalTitle">New Contract</span>
+      <button class="modal-close" onclick="closeModal('contractModal')">&#10005;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label>Reference (PPR-)</label>
+        <input id="cf-ref" type="text" placeholder="t.d. PPR-006"/>
+      </div>
+      <div class="form-group">
+        <label>Tenant</label>
+        <input id="cf-tenant" type="text" placeholder="Nafn leigjanda"/>
+      </div>
+      <div class="form-group">
+        <label>Tenant ID (kennitala)</label>
+        <input id="cf-tenantKt" type="text" placeholder="000000-0000"/>
+      </div>
+      <div class="form-group">
+        <label>Landlord</label>
+        <input id="cf-landlord" type="text" placeholder="Nafn leigusala"/>
+      </div>
+      <div class="form-group">
+        <label>Landlord ID (kennitala)</label>
+        <input id="cf-landlordKt" type="text" placeholder="000000-0000"/>
+      </div>
+      <div class="form-group">
+        <label>Property Address</label>
+        <input id="cf-address" type="text" placeholder="t.d. Borgartún 26"/>
+      </div>
+      <div class="form-group">
+        <label>Disbursed to Landlord (ISK)</label>
+        <input id="cf-amount" type="number" placeholder="0"/>
+      </div>
+      <div class="form-group">
+        <label>Monthly Rent (ISK)</label>
+        <input id="cf-rent" type="number" placeholder="0"/>
+      </div>
+      <div class="form-group">
+        <label>No. of Months</label>
+        <input id="cf-months" type="number" placeholder="12" value="12"/>
+      </div>
+      <div class="form-group">
+        <label>Start Date</label>
+        <input id="cf-startDate" type="date"/>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="cf-status">
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="done">Closed</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+      <div class="form-group form-full">
+        <label>Notes</label>
+        <textarea id="cf-notes" placeholder="Notes..."></textarea>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn" onclick="closeModal('contractModal')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveContract()">Save Contract</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT MODAL -->
+<div class="modal-overlay" id="clientModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="clientModalTitle">New Client</span>
+      <button class="modal-close" onclick="closeModal('clientModal')">&#10005;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Name</label><input id="cl-name" type="text"/></div>
+      <div class="form-group"><label>ID (kennitala)</label><input id="cl-kt" type="text"/></div>
+      <div class="form-group"><label>Email</label><input id="cl-email" type="email"/></div>
+      <div class="form-group"><label>Phone</label><input id="cl-phone" type="text"/></div>
+      <div class="form-full" style="border-top:0.5px solid var(--border);padding-top:12px;margin-top:4px">
+        <div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Contact Person</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group"><label>Contact Name</label><input id="cl-contact-name" type="text" placeholder="e.g. Gestur Sigurbjörnsson"/></div>
+          <div class="form-group"><label>Contact Title</label><input id="cl-contact-title" type="text" placeholder="e.g. CEO, Director"/></div>
+          <div class="form-group"><label>Contact Email</label><input id="cl-contact-email" type="email" placeholder="gestur@..."/></div>
+          <div class="form-group"><label>Contact Phone</label><input id="cl-contact-phone" type="text" placeholder="555-0000"/></div>
+        </div>
+      </div>
+      <div class="form-group form-full"><label>Notes</label><textarea id="cl-notes"></textarea></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn" onclick="closeModal('clientModal')">Cancel</button>
+      <button class="btn btn-dark" onclick="saveClient()">Vista</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 
+<div id="toast"></div>
 
 <script>
-// ===== CRM JS =====
 
 // ============ STORAGE POLYFILL ============
-var _memStore = {};
-var _storage = (function(){
-  try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
-  catch(e) {
-    return {
-      getItem:function(k){return _memStore[k]||null},
-      setItem:function(k,v){_memStore[k]=String(v)},
-      removeItem:function(k){delete _memStore[k]}
-    };
-  }
+var _memStore={};
+var _storage=(function(){
+  try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return localStorage;}
+  catch(e){return{getItem:function(k){return _memStore[k]||null},setItem:function(k,v){_memStore[k]=String(v)},removeItem:function(k){delete _memStore[k]}}}
 })();
 
+// Supabase client initialized above
 // ============ SUPABASE ============
 const SUPA_URL = 'https://irdduicaobmexdpndxov.supabase.co';
 const SUPA_KEY = 'sb_publishable_HFsNMcZzboiG1FMnxl_NJA_hQY87-lw';
@@ -962,6 +1029,36 @@ function getContracts_local(){try{return JSON.parse(_storage.getItem('krita_crm_
 function getClients_local(){try{return JSON.parse(_storage.getItem('krita_crm_clients')||'[]')}catch(e){return[]}}
 function lq_getAll_local(){try{return JSON.parse(_storage.getItem('krita_quotes')||'[]')}catch(e){return[]}}
 
+
+
+// ============ HELPERS ============
+function ISK(v){return Math.round(v||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')+' kr.';}
+function FMT(d){if(!d)return '';var dt=new Date(d);if(isNaN(dt))return '';return String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0')+'.'+dt.getFullYear();}
+function addMonths(d,n){var dt=new Date(d);dt.setMonth(dt.getMonth()+n);return dt;}
+function daysDiff(d){return Math.round((new Date(d)-new Date())/(1000*60*60*24));}
+// IS_MONTHS defined in CRM JS
+// IS_M_SHORT defined in CRM JS
+// FMTLONG defined in CRM JS
+var toastTimer;
+function showToast(msg){if(!msg){return;}var t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.style.opacity='0';},2500);}
+function fileIcon(n){if(/\.pdf$/i.test(n))return '📄';if(/\.(doc|docx)$/i.test(n))return '📝';if(/\.(jpg|jpeg|png|gif)$/i.test(n))return '🖼️';return '📎';}
+function formatSize(b){return b>1048576?(b/1048576).toFixed(1)+'MB':b>1024?(b/1024).toFixed(0)+'KB':b+'B';}
+
+
+// ===== CRM JS =====
+
+// ============ STORAGE POLYFILL ============
+var _memStore = {};
+var _storage = (function(){
+  try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
+  catch(e) {
+    return {
+      getItem:function(k){return _memStore[k]||null},
+      setItem:function(k,v){_memStore[k]=String(v)},
+      removeItem:function(k){delete _memStore[k]}
+    };
+  }
+})();
 
 // ============ HELPERS ============
 function ISK(v){return Math.round(v||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')+' kr.'}
@@ -1276,11 +1373,9 @@ var editingClientId=null;
 function showPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
-  const _pg=document.getElementById('page-'+name);if(_pg)_pg.classList.add('active');
+  document.getElementById('page-'+name).classList.add('active');
   const nl=document.getElementById('nav-'+name);
   if(nl)nl.classList.add('active');
-  if(name==='leigukaup'){document.body.classList.add('in-leigukaup');document.body.classList.remove('lq-client-view');}
-  else{document.body.classList.remove('in-leigukaup');document.body.classList.remove('lq-client-view');}
   if(name==='dashboard')renderDashboard();
   if(name==='contracts')renderContracts();
   if(name==='clients')renderClients();
@@ -2045,129 +2140,55 @@ function saveChecklist(o){_storage.setItem('krita_check_'+currentClientId,JSON.s
 function toggleCheck(id){
   const o=getChecklist();
   if(o[id])delete o[id];else o[id]={done:true,date:FMT(new Date())};
-  saveChecklist(o);
-  renderChecklist();
-  updateChecklistStat();
-}
-
-function updateChecklistStat(){
-  const ITEMS=getChecklistItems();
-  if(!ITEMS||!ITEMS.length)return;
-  const o=getChecklist();
-  const done=ITEMS.filter(function(i){return o[i.id];}).length;
-  const total=ITEMS.length;
-  const pct=Math.round(done/total*100);
-  // Uppfæra overview stat box
-  const stat=document.getElementById('crmChecklistStat');
-  if(stat)stat.innerHTML='<span style="font-size:18px;font-weight:700">'+done+'</span><span style="font-size:13px;color:var(--text2)">/'+total+'</span>';
-  const bar=document.getElementById('crmChecklistBar');
-  if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'#22c55e':pct>=60?'#f59e0b':'var(--accent)';}
+  saveChecklist(o);renderChecklist();
 }
 function renderChecklist(){
   const o=getChecklist();
   const el=document.getElementById('checklistItems');
   if(!el)return;
   const ITEMS=getChecklistItems();
-  if(!ITEMS||!ITEMS.length)return;
-
-  // Progress
+  
+  // Reikna progress
   const total=ITEMS.length;
-  const done_count=ITEMS.filter(function(i){return o[i.id];}).length;
+  const done_count=ITEMS.filter(function(item){return o[item.id];}).length;
   const pct=total>0?Math.round(done_count/total*100):0;
+  
+  // Uppfæra progress bar
   const bar=document.getElementById('checklistProgressBar');
-  if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'#22c55e':pct>=60?'#f59e0b':'var(--accent)';}
+  if(bar){
+    bar.style.width=pct+'%';
+    bar.style.background=pct===100?'#22c55e':pct>=60?'#f59e0b':'var(--accent)';
+  }
   const lbl=document.getElementById('checklistProgressLabel');
-  if(lbl)lbl.innerHTML='<span style="font-weight:700;color:'+(pct===100?'#166534':pct>=60?'#854d0e':'var(--dark)')+'">'+pct+'%</span> <span style="color:var(--text2)">'+done_count+'/'+total+'</span>';
-
-  // Render items
-  el.innerHTML='';
-  ITEMS.forEach(function(item){
+  if(lbl) lbl.innerHTML=
+    '<span style="font-weight:700;color:'+(pct===100?'#166534':pct>=60?'#854d0e':'var(--dark)')+'">'+pct+'%</span>'+
+    ' <span style="color:var(--text2)">'+done_count+'/'+total+'</span>';
+  
+  el.innerHTML=ITEMS.map(item=>{
     const done=o[item.id];
     const files=getCheckFiles(item.id);
-
-    // Wrapper
-    const wrap=document.createElement('div');
-    wrap.style.marginBottom='8px';
-
-    // Item row
-    const row=document.createElement('div');
-    row.className='check-item'+(done?' done':'');
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);border:0.5px solid var(--border);background:'+(done?'var(--light)':'white');
-
-    // Checkbox
-    const box=document.createElement('div');
-    box.className='check-box'+(done?' on':'');
-    box.innerHTML=done?'&#10003;':'';
-    box.style.cssText='width:18px;height:18px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;'+(done?'background:var(--dark);border-color:var(--dark);color:white;':'');
-    (function(id){box.addEventListener('click',function(){toggleCheck(id);});})(item.id);
-
-    // Text
-    const txt=document.createElement('div');
-    txt.style.cssText='flex:1;min-width:0';
-    const lbl2=document.createElement('div');
-    lbl2.className='check-label';
-    lbl2.textContent=item.label;
-    lbl2.style.cssText='font-size:13px;font-weight:600;cursor:pointer';
-    (function(id){lbl2.addEventListener('click',function(){toggleCheck(id);});})(item.id);
-    const desc=document.createElement('div');
-    desc.style.cssText='font-size:11px;color:var(--text2);margin-top:1px';
-    desc.textContent=item.desc||'';
-    txt.appendChild(lbl2);txt.appendChild(desc);
-
-    // Date if done
-    if(done){
-      const dt=document.createElement('div');
-      dt.className='check-date';
-      dt.textContent=done.date||'';
-      row.appendChild(box);row.appendChild(txt);row.appendChild(dt);
-    } else {
-      row.appendChild(box);row.appendChild(txt);
-    }
-
-    // File upload
-    const flbl=document.createElement('label');
-    flbl.style.cssText='cursor:pointer;margin-left:8px;display:flex;align-items:center;gap:2px';
-    flbl.title='Hlaða upp skjali';
-    const ficon=document.createElement('span');
-    ficon.style.cssText='font-size:18px;opacity:'+(files.length?'1':'0.35');
-    ficon.textContent='📎';
-    const finput=document.createElement('input');
-    finput.type='file';finput.multiple=true;finput.style.display='none';
-    (function(id){finput.addEventListener('change',function(){addCheckFile(id,this);});})(item.id);
-    if(files.length){
-      const fcnt=document.createElement('span');
-      fcnt.style.cssText='font-size:10px;font-weight:600;color:var(--dark)';
-      fcnt.textContent=files.length;
-      flbl.appendChild(ficon);flbl.appendChild(fcnt);flbl.appendChild(finput);
-    } else {
-      flbl.appendChild(ficon);flbl.appendChild(finput);
-    }
-    row.appendChild(flbl);
-    wrap.appendChild(row);
-
-    // File list
-    if(files.length){
-      const flist=document.createElement('div');
-      flist.style.cssText='margin-left:28px;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px';
-      files.forEach(function(f,i){
-        const fi=document.createElement('div');
-        fi.style.cssText='display:flex;align-items:center;gap:4px;background:var(--bg2);border:0.5px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px';
-        const fsp=document.createElement('span');fsp.textContent=fileIcon(f.name);
-        const fn2=document.createElement('span');
-        fn2.textContent=f.name;
-        fn2.style.cssText='font-weight:500;cursor:pointer;text-decoration:underline;text-decoration-style:dotted';
-        (function(id,idx){fn2.addEventListener('click',function(){openCheckFile(id,idx);});})(item.id,i);
-        const fdel=document.createElement('button');
-        fdel.innerHTML='&times;';
-        fdel.style.cssText='border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;padding:0 2px;line-height:1';
-        (function(id,idx){fdel.addEventListener('click',function(){removeCheckFile(id,idx);});})(item.id,i);
-        fi.appendChild(fsp);fi.appendChild(fn2);fi.appendChild(fdel);
-        flist.appendChild(fi);
-      });
-      wrap.appendChild(flist);
-    }
-    el.appendChild(wrap);
-  });
+    return `<div class="check-item-wrap" style="margin-bottom:8px">
+      <div class="check-item ${done?'done':''}" style="cursor:default;margin-bottom:0">
+        <div class="check-box ${done?'on':''}" onclick="toggleCheck('${item.id}')" style="cursor:pointer;flex-shrink:0">${done?'&#10003;':''}</div>
+        <div style="flex:1;min-width:0">
+          <div class="check-label" onclick="toggleCheck('${item.id}')" style="cursor:pointer">${item.label}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px">${item.desc}</div>
+        </div>
+        ${done?`<div class="check-date">${done.date}</div>`:''}
+        <label style="cursor:pointer;margin-left:8px" title="${t('uploadFile')}">
+          <span style="font-size:18px;opacity:${files.length?'1':'0.4'}">📎</span>${files.length?`<span style="font-size:10px;font-weight:600;color:var(--dark);margin-left:2px">${files.length}</span>`:''}
+          <input type="file" multiple style="display:none" onchange="addCheckFile('${item.id}',this)"/>
+        </label>
+      </div>
+      ${files.length?`<div style="margin-left:28px;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
+        ${files.map((f,i)=>`<div style="display:flex;align-items:center;gap:4px;background:var(--bg2);border:0.5px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px">
+          <span>${fileIcon(f.name)}</span>
+          <span style="font-weight:500;cursor:pointer;text-decoration:underline;text-decoration-style:dotted" onclick="openCheckFile('${item.id}',${i})" title="Opna skjal">${f.name}</span>
+          <button onclick="removeCheckFile('${item.id}',${i})" style="border:none;background:none;cursor:pointer;color:var(--text2);font-size:13px;padding:0 2px;line-height:1">&times;</button>
+        </div>`).join('')}
+      </div>`:''}
+    </div>`;
+  }).join('');
 }
 
 function getCheckFiles(itemId){
@@ -2332,7 +2353,18 @@ function deleteClient(id){
   setClients(getClients().filter(x=>x.id!==id));renderClients();showToast(t('clientDeleted'));
 }
 
-
+// ============ STORAGE POLYFILL ============
+var _memStore = {};
+var _storage = (function(){
+  try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return localStorage; }
+  catch(e) {
+    return {
+      getItem:function(k){return _memStore[k]||null},
+      setItem:function(k,v){_memStore[k]=String(v)},
+      removeItem:function(k){delete _memStore[k]}
+    };
+  }
+})();
 
 // ============ HELPERS ============
 function badgeHTML(s){
@@ -2373,213 +2405,14 @@ var toastTimer;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity='0',2500)}
 
 // Close modal on overlay click
-// ============ AUTH ============
-async function checkAuth(){
-  if(!_supa){return;}
-  const {data:{session}} = await _supa.auth.getSession();
-  if(!session){
-    document.getElementById('loginOverlay').style.display='flex';
-    document.querySelector('.nav').style.display='none';
-    document.querySelectorAll('.page').forEach(function(p){p.style.display='none';});
-  } else {
-    document.getElementById('loginOverlay').style.display='none';
-    document.querySelector('.nav').style.display='flex';
-  }
-}
-
-async function doLogin(){
-  const email=document.getElementById('loginEmail').value;
-  const password=document.getElementById('loginPassword').value;
-  const errEl=document.getElementById('loginError');
-  errEl.style.display='none';
-  if(!email||!password){errEl.textContent='Fylltu inn netfang og lykilorð';errEl.style.display='block';return;}
-  if(!_supa){errEl.textContent='Tenging við gagnagrunn mistókst';errEl.style.display='block';return;}
-  const {data,error}=await _supa.auth.signInWithPassword({email,password});
-  if(error){errEl.textContent='Rangt netfang eða lykilorð';errEl.style.display='block';return;}
-  document.getElementById('loginOverlay').style.display='none';
-  document.querySelector('.nav').style.display='flex';
-  document.querySelectorAll('.page').forEach(function(p){p.style.display='';});
-  initFromSupabase();
-}
-
-async function initFromSupabase(){
-  if(!_supa){
-    // Enginn Supabase - nota localStorage og demo gögn
-    addDemoData();
-    renderDashboard();
-    return;
-  }
-  
-  // Sýna loading state
-  document.getElementById('page-dashboard').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:16px"><div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--dark);border-radius:50%;animation:spin 0.8s linear infinite"></div><div style="color:var(--text2);font-size:14px">Sæki gögn...</div></div>';
-  document.getElementById('page-dashboard').classList.add('active');
-  
-  try{
-    // Sækja allt samhliða
-    const [contracts,clients,quotes] = await Promise.all([
-      _db.getContracts(),
-      _db.getClients(),
-      _db.getQuotes()
-    ]);
-    
-    // Ef gagnagrunnur er tómur og við erum með demo gögn - EKKI hlaða upp demo
-    // Notandi byrjar með tómt kerfi
-    if(contracts.length===0 && clients.length===0){
-      // Tómt - ekki bæta við demo gögnum
-      _storage.setItem('krita_crm_contracts','[]');
-      _storage.setItem('krita_crm_clients','[]');
-    }
-    
-    // Endurbyggja dashboard
-    const dashHTML='<div id="statsGrid" class="stat-grid"></div>'+
-      '<div class="card" style="border-left:4px solid #ef4444;margin-bottom:1rem">'+
-        '<div class="card-title" style="color:#991b1b">⚠️ Þarfnast athygli</div>'+
-        '<div class="attention-grid" id="attentionGrid"></div>'+
-        '<div id="attentionItems"></div></div>'+
-      '<div id="statsGrid2" style="display:none"></div>'+
-      '<div class="two-col" style="margin-bottom:1rem">'+
-        '<div class="card" style="margin-bottom:0"><div class="card-title">📅 Á gjalddaga — næstu 7 dagar</div><div id="upcoming7List"></div></div>'+
-        '<div class="card" style="margin-bottom:0"><div class="card-title" style="color:#166534">💡 Tækifæri</div><div id="opportunitiesList"></div></div>'+
-      '</div>'+
-      '<div class="two-col" style="margin-bottom:1rem">'+
-        '<div class="card" style="margin-bottom:0"><div class="card-title">💰 Sjóðstreymi — næstu 30 dagar</div><div id="cashForecast"></div></div>'+
-        '<div class="card" style="margin-bottom:0"><div class="card-title">🎯 Áhættuyfirlit</div><div id="riskSnapshot"></div></div>'+
-      '</div>'+
-      '<div class="two-col">'+
-        '<div class="card"><div class="card-title">📆 Gjalddagar — næstu 30 dagar</div><div id="upcomingList"></div></div>'+
-        '<div class="card"><div class="card-title">Útgreiðslur eftir mánuðum</div><div class="chart-bars" id="chartBars"></div><div style="display:flex;gap:4px;margin-top:4px" id="chartLabels"></div></div>'+
-      '</div>'+
-      '<div class="card"><div class="card-title">Virkir samningar</div>'+
-        '<table><thead><tr><th>Leigjandi</th><th>Leigusali</th><th>Útgreitt</th><th>Mán</th><th>Næsti gjalddagi</th><th>Risk</th><th>Staða</th></tr></thead><tbody id="dashTableBody"></tbody></table>'+
-      '</div>';
-    document.getElementById('page-dashboard').innerHTML=dashHTML;
-    
-    renderDashboard();
-    showToast('✓ '+contracts.length+' samningar, '+clients.length+' viðskiptavinir');
-    
-  }catch(e){
-    console.warn('Supabase init villa:', e);
-    // Fallback til localStorage
-    document.getElementById('page-dashboard').innerHTML='';
-    addDemoData();
-    renderDashboard();
-    showToast('Villa við að sækja gögn — nota staðbundin gögn');
-  }
-}
-
-// Override saveContract/saveClient/lq_saveQuote til að synca við Supabase
-// saveContract + Supabase sync
-(function(){
-  var _origSaveContract = saveContract;
-  saveContract = function saveContract(){
-    var _savingId = editingContractId;
-    _origSaveContract();
-    if(_supa){
-      var all = getContracts();
-      var latest = _savingId ? all.find(function(x){return x.id===_savingId;}) : null;
-      if(!latest && all.length>0) latest = all[0];
-      if(latest){
-        _db.saveContract(latest).then(function(){
-          console.log('Samningur vistaður í Supabase:', latest.id);
-        }).catch(function(e){
-          console.error('Villa við að vista samning:', e);
-        });
-      }
-    }
-  };
-})();
-// saveClient + Supabase sync
-(function(){
-  var _origSaveClient = saveClient; // vista reference STRAX
-  saveClient = function saveClient(){
-    var _savingId = editingClientId;
-    _origSaveClient(); // kalla original
-    if(_supa){
-      var all = getClients();
-      var latest = _savingId ? all.find(function(x){return x.id===_savingId;}) : null;
-      if(!latest && all.length>0) latest = all[0];
-      if(latest){
-        _db.saveClient(latest).then(function(){
-          console.log('Client vistaður í Supabase:', latest.id);
-        }).catch(function(e){
-          console.error('Villa við að vista client:', e);
-        });
-      }
-    }
-  };
-})();
-// lq_saveQuote + Supabase sync
-(function(){
-  var _origLqSaveQuote = lq_saveQuote;
-  lq_saveQuote = function lq_saveQuote(){
-    _origLqSaveQuote();
-    if(_supa){
-      var all = lq_getAll();
-      if(all.length>0) _db.saveQuote(all[0]);
-    }
-  };
-})();
-// deleteContract + Supabase sync
-(function(){
-  var _origDeleteContract = deleteContract;
-  deleteContract = function deleteContract(id){
-    _origDeleteContract(id);
-    if(_supa) _db.deleteContract(id);
-  };
-})();
-// deleteClient + Supabase sync
-(function(){
-  var _origDeleteClient = deleteClient;
-  deleteClient = function deleteClient(id){
-    _origDeleteClient(id);
-    if(_supa) _db.deleteClient(id);
-  };
-})();
-// lq_deleteQuote + Supabase sync
-(function(){
-  var _origLqDeleteQuote = lq_deleteQuote;
-  lq_deleteQuote = function lq_deleteQuote(id){
-    _origLqDeleteQuote(id);
-    if(_supa) _db.deleteQuote(id);
-  };
-})();
-
-// Override togglePayment til að bruka _db async
-// togglePayment + Supabase sync
-(function(){
-  var _origTogglePayment = togglePayment;
-  togglePayment = function togglePayment(cid, month){
-    if(_supa){
-      _db.togglePaidMonth(cid, month).then(function(){
-        var contract = getContracts().find(function(x){return x.id===cid;});
-        if(contract) document.getElementById('crmPaySchedule').innerHTML = renderPaySchedule(contract);
-      });
-    } else {
-      _origTogglePayment(cid, month);
-    }
-  };
-})();
-
 function _init(){
   if(typeof addDemoData==='undefined')return setTimeout(_init,10);
   document.querySelectorAll('.modal-overlay').forEach(function(o){
     o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});
   });
+  addDemoData();
   applyLang();
-  if(_supa){
-    _supa.auth.onAuthStateChange(function(event,session){
-      if(event==='SIGNED_OUT'||event==='TOKEN_REFRESHED'){}
-    });
-    checkAuth().then(function(){
-      _supa.auth.getSession().then(function(result){
-        if(result.data.session){initFromSupabase();}
-        else{addDemoData();renderDashboard();}
-      });
-    });
-  } else {
-    addDemoData();
-    renderDashboard();
-  }
+  renderDashboard();
 }
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',_init);
@@ -2590,17 +2423,16 @@ if(document.readyState==='loading'){
 
 // ===== LEIGUKAUP JS =====
 
-function PCT(v){return parseFloat(v*100).toFixed(2)+'%'}
-
+function lq_PCT(v){return parseFloat(v*100).toFixed(2)+'%'}
 
 function lq_FMTLONG(d){if(!d)return '';const dt=(d instanceof Date)?d:new Date(d);if(isNaN(dt))return '';return dt.getDate()+'. '+IS_MONTHS[dt.getMonth()]+' '+dt.getFullYear()}
 const WY_LIMIT_EUR = 50000;
 function lq_getWyLimitISK(){return WY_LIMIT_EUR*(parseFloat(document.getElementById('fxRate').value)||145);}
 
-function fmtKt(v){const d=v.replace(/\D/g,'');return d.length<=6?d:d.slice(0,6)+'-'+d.slice(6,10)}
+function lq_fmtKt(v){const d=v.replace(/\D/g,'');return d.length<=6?d:d.slice(0,6)+'-'+d.slice(6,10)}
 function lq_offerRef(){const el=document.getElementById('refTitle');const v=el?el.value.trim().replace(/\s+/g,'-'):'';if(v)return 'PPR-'+v;const n=new Date();return 'PPR-'+n.getFullYear()+String(n.getMonth()+1).padStart(2,'0')+'-'+Math.floor(1000+Math.random()*9000)}
 function expiryDate(){const d=new Date();d.setDate(d.getDate()+30);return lq_FMTLONG(d)}
-
+function addMonths(date,n){const d=new Date(date);d.setMonth(d.getMonth()+n);return d}
 
 let lq_selectedIds=new Set();
 let lq_editingId=null;
@@ -2618,7 +2450,7 @@ function lq_findDecliningRate(N, targetMonths) {
   return rate;
 }
 
-function doCalc(rent,N,feeRate,startDate){
+function lq_doCalc(rent,N,feeRate,startDate){
   const totalRent=rent*N;
   const rows=[];let out=totalRent,totalFees=0;
   for(let i=0;i<N;i++){
@@ -2633,7 +2465,7 @@ function lq_calcFromQ(q){
   const feeRate = q.costMonths
     ? lq_findDecliningRate(q.N, q.costMonths)
     : (q.feeRate ? q.feeRate/100 : lq_findDecliningRate(q.N, 2));
-  return doCalc(q.rent,q.N,feeRate,q.startDate?new Date(q.startDate):new Date());
+  return lq_doCalc(q.rent,q.N,feeRate,q.startDate?new Date(q.startDate):new Date());
 }
 function lq_calc(){
   const rent=parseFloat(document.getElementById('monthlyRent').value)||0;
@@ -2641,11 +2473,11 @@ function lq_calc(){
   const cm=parseFloat(document.getElementById('costMonths').value)||2;
   const feeRate=lq_findDecliningRate(N,cm);
   const sd=document.getElementById('startDate').value;
-  return doCalc(rent,N,feeRate,sd?new Date(sd):new Date());
+  return lq_doCalc(rent,N,feeRate,sd?new Date(sd):new Date());
 }
 
 ['tenantKt','landlordKt'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',function(){this.value=fmtKt(this.value)});
+  document.getElementById(id).addEventListener('input',function(){this.value=lq_fmtKt(this.value)});
 });
 
 function lq_update(){
@@ -2874,51 +2706,22 @@ function lq_renderBundle(quotes){
   });
   const _cvEl=document.getElementById('clientViewContent');
   _cvEl.style.cssText='display:block;width:100%';
-  // Nav bar
-  const rbNav=document.createElement('div');
-  rbNav.className='no-print';
-  rbNav.style.cssText='display:flex;gap:12px;margin-bottom:12px;align-items:center;background:#f4f6f5;padding:10px 16px;border-radius:6px;border:0.5px solid #c8ddd0';
-  const rb1=document.createElement('button');rb1.textContent='← Reikningur';rb1.style.cssText='background:none;border:none;color:#0d3320;font-weight:600;cursor:pointer;font-size:13px';rb1.onclick=function(){lq_switchTab('calculator');};
-  const rbSep=document.createElement('span');rbSep.textContent='|';rbSep.style.cssText='color:#c8ddd0;margin:0 4px';
-  const rb2=document.createElement('button');rb2.textContent='📋 Vistaðir reikningar';rb2.style.cssText='background:none;border:none;color:#0d3320;font-weight:600;cursor:pointer;font-size:13px';rb2.onclick=function(){lq_switchTab('saved');};
-  rbNav.appendChild(rb1);rbNav.appendChild(rbSep);rbNav.appendChild(rb2);
-  _cvEl.innerHTML='';_cvEl.appendChild(rbNav);const _cvDiv=document.createElement('div');_cvDiv.innerHTML=html;_cvEl.appendChild(_cvDiv);
+  _cvEl.innerHTML=html;
 }
 
 function lq_renderClient(q){
   const el=document.getElementById('clientViewContent');
-  el.innerHTML='';
-  // Nav bar með createElement - forðast quote vandann
-  const rcNav=document.createElement('div');
-  rcNav.className='no-print';
-  rcNav.style.cssText='display:flex;gap:12px;margin-bottom:12px;align-items:center;background:#f4f6f5;padding:10px 16px;border-radius:6px;border:0.5px solid #c8ddd0';
-  const btn1=document.createElement('button');
-  btn1.textContent='← Reikningur';
-  btn1.style.cssText='background:none;border:none;color:#0d3320;font-weight:600;cursor:pointer;font-size:13px';
-  btn1.onclick=function(){lq_switchTab('calculator');};
-  const sep=document.createElement('span');
-  sep.textContent='|';sep.style.color='#c8ddd0';
-  const btn2=document.createElement('button');
-  btn2.textContent='📋 Vistaðir reikningar';
-  btn2.style.cssText='background:none;border:none;color:#0d3320;font-weight:600;cursor:pointer;font-size:13px';
-  btn2.onclick=function(){lq_switchTab('saved');};
-  rcNav.appendChild(btn1);rcNav.appendChild(sep);rcNav.appendChild(btn2);
-  el.appendChild(rcNav);
-  const rcContent=document.createElement('div');
-  rcContent.innerHTML=lq_singleClientHTML(q,lq_currentRef,'');
-  el.appendChild(rcContent);
+  el.style.cssText='display:block;width:100%';
+  el.innerHTML=lq_singleClientHTML(q,lq_currentRef,'');
 }
 
 /* ---- NAV ---- */
 function lq_switchTab(name){
-  const lqRoot=document.getElementById('page-leigukaup');
-  if(!lqRoot)return;
-  lqRoot.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  lqRoot.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  const panel=lqRoot.querySelector('#panel-'+name);
-  if(panel)panel.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
   const idx=['calculator','saved','client'].indexOf(name);
-  if(idx>=0){const tabs=lqRoot.querySelectorAll('.tab');if(tabs[idx])tabs[idx].classList.add('active');}
+  if(idx>=0)document.querySelectorAll('.tab')[idx].classList.add('active');
   if(name==='client'){
     const rt=document.getElementById('refTitle');
     if(rt&&rt.value.trim())lq_currentRef='PPR-'+rt.value.trim().replace(/\s+/g,'-');
@@ -2948,9 +2751,6 @@ function lq_switchTab(name){
     if(msb)msb.style.display=lq_editingId?'inline-block':'none';
   }
   if(name==='saved')lq_loadSaved();
-  // body class for print CSS
-  if(name==='client') document.body.classList.add('lq-client-view');
-  else document.body.classList.remove('lq-client-view');
 }
 
 /* ---- STORAGE ---- */
@@ -3045,22 +2845,14 @@ function lq_loadSaved(){
       '</div>'+
       '<div class="si-actions">'+
         '<button class="btn btn-sm" onclick="lq_loadQuote(\''+q.id+'\')">Opna</button>'+
-        '<button class="btn btn-sm" onclick="lq_loadQuote(\''+q.id+'\')">Opna</button>'+
-        '<button class="btn btn-sm btn-dark" onclick="lq_previewSingle(\''+q.id+'\')">Sýna</button>'+
-        (!q.sentAt ? '<button class="btn btn-sm" style="background:#0d3320;color:white;border-color:#0d3320;font-size:11px" onclick="lq_editingId=\''+q.id+'\';lq_previewSingle(\''+q.id+'\');setTimeout(lq_markAsSent,500)">✅ Samþykkja</button>' : '<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:8px;font-weight:600">✓ Samþykkt</span>')+
+        '<button class="btn btn-sm btn-dark" onclick="lq_previewSingle(\''+q.id+'\')">View</button>'+
+        '<button class="btn btn-sm btn-danger" onclick="lq_deleteQuote(\''+q.id+'\')">Eyða</button>'+
       '</div>'+
     '</div>'
   ).join('')+'</div>';
 }
 
-function lq_previewSingle(id){
-  const q=lq_getAll().find(x=>x.id===id);if(!q)return;
-  lq_editingId=id;  // MIKILVÆGT: setja editingId svo markSentBtn birtist
-  lq_selectedIds.clear();
-  lq_currentRef=q.refTitle?'PPR-'+q.refTitle:lq_offerRef();
-  lq_renderClient(q);
-  lq_switchTab('client');
-}
+function lq_previewSingle(id){const q=lq_getAll().find(x=>x.id===id);if(!q)return;lq_selectedIds.clear();lq_currentRef=q.refTitle?'PPR-'+q.refTitle:lq_offerRef();lq_renderClient(q);lq_switchTab('client')}
 
 function lq_loadQuote(id){
   const q=lq_getAll().find(x=>x.id===id);if(!q)return;
@@ -3082,92 +2874,33 @@ function lq_loadQuote(id){
 function lq_deleteQuote(id){lq_selectedIds.delete(id);lq_setAll(lq_getAll().filter(x=>x.id!==id));lq_loadSaved()}
 
 function lq_markAsSent(){
-  // Vista fyrst ef þarf
-  if(!lq_editingId) lq_saveQuote();
-  if(!lq_editingId) return;
-  
+  if(!lq_editingId)return;
   const all=lq_getAll();
   const idx=all.findIndex(x=>x.id===lq_editingId);
-  if(idx<0) return;
-  
-  all[idx].sentAt=new Date().toISOString();
-  lq_setAll(all);
-  
-  try {
-    const q=all[idx];
-    
-    // 1. Sync samningur yfir í CRM
-    const crmKey='krita_crm_contracts';
-    let crmAll=JSON.parse(_storage.getItem(crmKey)||'[]');
-    const crmIdx=crmAll.findIndex(x=>x.id==='lq_'+q.id);
-    const newContractId='lq_'+q.id;
-    const crmC={
-      id:newContractId,
-      ref:q.refTitle?'PPR-'+q.refTitle:'PPR-'+q.id.slice(-4),
-      tenantName:q.tenantName||'',
-      tenantKt:q.tenantKt||'',
-      landlordName:q.landlordName||'',
-      landlordKt:q.landlordKt||'',
-      address:q.propertyAddress||'',
-      amount:Math.round(q.purchasePrice||0),
-      rent:Math.round(q.rent||0),
-      months:q.N||12,
-      startDate:q.startDate||'',
-      status:'active', approvedAt:new Date().toISOString(),
-      notes:'Tilboð sent '+lq_FMTLONG(new Date()),
-      createdAt:q.savedAt||new Date().toISOString(),
-      sentAt:all[idx].sentAt,
-      fromLeigukaup:true,
-    };
-    if(crmIdx>=0) crmAll[crmIdx]=crmC; else crmAll.unshift(crmC);
-    _storage.setItem(crmKey,JSON.stringify(crmAll));
-    if(_supa) _db.saveContract(crmC);
-    
-    // 2. Stofna/uppfæra CRM client (leigusali = okkar viðskiptavinur)
-    if(q.landlordName||q.landlordKt){
-      const clientKey='krita_crm_clients';
-      let clients=JSON.parse(_storage.getItem(clientKey)||'[]');
-      const existingIdx=clients.findIndex(x=>x.kt===q.landlordKt||(x.name===q.landlordName&&!q.landlordKt));
-      const clientData={
-        id:existingIdx>=0?clients[existingIdx].id:'cl_lq_'+q.id,
-        name:q.landlordName||'',
-        kt:q.landlordKt||'',
-        email:q.landlordEmail||'',
-        phone:'',
-        notes:'Stofnaður sjálfkrafa úr Leigukaup tilboði '+crmC.ref,
-        contactName:'',contactTitle:'',contactEmail:q.landlordEmail||'',contactPhone:'',
+  if(idx>=0){
+    all[idx].sentAt=new Date().toISOString();lq_setAll(all);
+    showToast('✅ Merkt sem sent og sent yfir í CRM');lq_loadSaved();
+    // Sync to CRM með status pending
+    try{
+      const q=all[idx];const crmKey='krita_crm_contracts';
+      let crmAll=JSON.parse(_storage.getItem(crmKey)||'[]');
+      const crmIdx=crmAll.findIndex(x=>x.id==='lq_'+q.id);
+      const crmC={
+        id:'lq_'+q.id,
+        ref:q.refTitle?'PPR-'+q.refTitle:'PPR-'+q.id.slice(-4),
+        tenantName:q.tenantName||'',tenantKt:q.tenantKt||'',
+        landlordName:q.landlordName||'',landlordKt:q.landlordKt||'',
+        address:q.propertyAddress||'',
+        amount:Math.round(q.purchasePrice||0),
+        rent:Math.round(q.rent||0),months:q.N||12,
+        startDate:q.startDate||'',status:'pending',
+        notes:'Tilboð sent '+lq_FMTLONG(new Date()),
+        createdAt:q.savedAt||new Date().toISOString(),
+        sentAt:all[idx].sentAt,fromLeigukaup:true,
       };
-      if(existingIdx>=0) clients[existingIdx]={...clients[existingIdx],...clientData};
-      else clients.unshift(clientData);
-      _storage.setItem(clientKey,JSON.stringify(clients));
-      if(_supa) _db.saveClient(existingIdx>=0?clients[existingIdx]:clientData);
-    }
-    
-    // 3. Fara yfir í CRM og opna samninginn
-    // Gátlisti check
-    var checkItems = typeof getChecklistItems === 'function' ? getChecklistItems() : [];
-    var clientCheckKey = 'krita_check_cl_lq_'+q.id;
-    var doneChecks = JSON.parse(_storage.getItem(clientCheckKey)||'{}');
-    var undone = checkItems.filter(function(i){return !doneChecks[i.id]});
-    var msg = '✅ Tilboð samþykkt! Samningur stofnaður í CRM.';
-    if(undone.length > 0){
-      msg += '\n\n⚠️ Athugið: '+undone.length+' atriði í gátlista eru ekki hökuð:\n';
-      msg += undone.slice(0,5).map(function(i){return '• '+i.label}).join('\n');
-      if(undone.length > 5) msg += '\n... og '+(undone.length-5)+' til viðbótar';
-      alert(msg);
-    } else {
-      showToast(msg);
-    }
-    setTimeout(function(){
-      showPage('contracts');
-      setTimeout(function(){
-        openContract(newContractId);
-      }, 300);
-    }, 600);
-    
-  } catch(e) {
-    console.warn('CRM sync villa:', e);
-    showToast('Villa við sync: '+e.message);
+      if(crmIdx>=0)crmAll[crmIdx]=crmC;else crmAll.unshift(crmC);
+      _storage.setItem(crmKey,JSON.stringify(crmAll));
+    }catch(e){console.warn('CRM sync:',e);}
   }
 }
 
@@ -3261,7 +2994,6 @@ function lq_exportExcel(){
 
 
 
-
 document.getElementById('months').addEventListener('input', function(){
   if(!lq_costMonthsManual){
     const N = parseInt(this.value)||12;
@@ -3280,7 +3012,409 @@ document.getElementById('startDate').value=new Date().toISOString().split('T')[0
 lq_update();
 
 
-// lq_switchTab body class handled in original above
+// ===== PAGE ROUTING =====
+var _origCrmShowPage = showPage;
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-link').forEach(function(l){l.classList.remove('active');});
+  var pg=document.getElementById('page-'+name);
+  if(pg)pg.classList.add('active');
+  var nl=document.getElementById('nav-'+name);
+  if(nl)nl.classList.add('active');
+  if(name==='leigukaup'){
+    document.body.classList.add('in-leigukaup');
+    document.body.classList.remove('lq-client-view');
+  } else {
+    document.body.classList.remove('in-leigukaup');
+    document.body.classList.remove('lq-client-view');
+    if(name==='dashboard')renderDashboard();
+    if(name==='contracts')renderContracts();
+    if(name==='clients')renderClients();
+  }
+}
+
+// lq_switchTab - scope to leigukaup page + body class
+var _baseLqSwitchTab = lq_switchTab;
+function lq_switchTab(name){
+  var lqRoot=document.getElementById('page-leigukaup');
+  if(!lqRoot)return;
+  lqRoot.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  lqRoot.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  var panel=lqRoot.querySelector('#panel-'+name);
+  if(panel)panel.classList.add('active');
+  var tabs=lqRoot.querySelectorAll('.tab');
+  var idx=['calculator','saved','client'].indexOf(name);
+  if(idx>=0&&tabs[idx])tabs[idx].classList.add('active');
+  if(name==='client'){
+    document.body.classList.add('lq-client-view');
+    // Nav bar í client view
+    var lq_currentRef_val=typeof lq_currentRef!=='undefined'?lq_currentRef:'';
+    var rt=document.getElementById('refTitle');
+    if(rt&&rt.value.trim())lq_currentRef='PPR-'+rt.value.trim();
+    var all=lq_getAll();var lq_selectedIds_val=typeof lq_selectedIds!=='undefined'?lq_selectedIds:new Set();
+    var sel=all.filter(function(q){return lq_selectedIds_val.has(q.id);});
+    if(sel.length>1)lq_renderBundle(sel);
+    else if(sel.length===1)lq_renderClient(sel[0]);
+    else{
+      var c=lq_calc();
+      var rt2=document.getElementById('refTitle');
+      if(rt2&&rt2.value.trim())lq_currentRef='PPR-'+rt2.value.trim();
+      else lq_currentRef=lq_offerRef();
+      lq_renderClient({
+        tenantName:document.getElementById('tenantName').value,
+        tenantKt:document.getElementById('tenantKt').value,
+        propertyAddress:document.getElementById('propertyAddress').value,
+        landlordName:document.getElementById('landlordName').value,
+        landlordKt:document.getElementById('landlordKt').value,
+        landlordEmail:document.getElementById('landlordEmail').value,
+        rent:c.rent,N:c.N,costMonths:parseFloat(document.getElementById('costMonths').value)||2,
+        feeRate:c.feeRate*100,startDate:document.getElementById('startDate').value
+      });
+    }
+    var eb=document.getElementById('emailBtn');if(eb)eb.style.display='inline-block';
+    var msb=document.getElementById('markSentBtn');if(msb)msb.style.display=lq_editingId?'inline-block':'none';
+  } else {
+    document.body.classList.remove('lq-client-view');
+  }
+  if(name==='saved')lq_loadSaved();
+}
+
+// ===== SUPABASE SYNC PATCHES =====
+(function(){
+  var _origSaveContract=saveContract;
+  saveContract=function saveContract(){
+    var _id=editingContractId;
+    _origSaveContract();
+    if(_supa){var all=getContracts();var c=_id?all.find(function(x){return x.id===_id;}):all[0];if(c)_db.saveContract(c);}
+  };
+})();
+(function(){
+  var _origSaveClient=saveClient;
+  saveClient=function saveClient(){
+    var _id=editingClientId;
+    _origSaveClient();
+    if(_supa){var all=getClients();var c=_id?all.find(function(x){return x.id===_id;}):all[0];if(c)_db.saveClient(c);}
+  };
+})();
+(function(){
+  var _origLqSQ=lq_saveQuote;
+  lq_saveQuote=function lq_saveQuote(){
+    _origLqSQ();
+    if(_supa){var all=lq_getAll();if(all.length>0)_db.saveQuote(all[0]);}
+  };
+})();
+(function(){
+  var _origDelC=deleteContract;
+  deleteContract=function deleteContract(id){_origDelC(id);if(_supa)_db.deleteContract(id);};
+})();
+(function(){
+  var _origDelCl=deleteClient;
+  deleteClient=function deleteClient(id){_origDelCl(id);if(_supa)_db.deleteClient(id);};
+})();
+(function(){
+  var _origLqDel=lq_deleteQuote;
+  lq_deleteQuote=function lq_deleteQuote(id){_origLqDel(id);if(_supa)_db.deleteQuote(id);};
+})();
+
+// ===== TOGGLEPAYMENT FIX (instant UI update + Supabase sync) =====
+function togglePayment(cid,month){
+  var paid=getPaidMonths({id:cid});
+  var idx=paid.indexOf(month);
+  if(idx>=0)paid.splice(idx,1);else paid.push(month);
+  setPaidMonths(cid,paid);
+  var contract=getContracts().find(function(x){return x.id===cid;});
+  if(contract){
+    var schedEl=document.getElementById('crmPaySchedule');
+    if(schedEl)schedEl.innerHTML=renderPaySchedule(contract);
+    var rcEl=document.getElementById('crmRecentContracts');
+    if(rcEl&&rcEl.querySelector('.pay-row'))rcEl.innerHTML=renderPaySchedule(contract);
+  }
+  showToast(idx>=0?'Greiðsla afmerkt':'Greiðsla merkt sem greidd ✓');
+  if(_supa){
+    if(idx>=0){_supa.from('paid_months').delete().eq('contract_id',cid).eq('month_index',month).then(function(){});}
+    else{_supa.from('paid_months').insert({contract_id:cid,month_index:month}).then(function(){});}
+  }
+}
+
+// ===== SENDREMINDEREMAIL FIX =====
+function sendReminderEmail(contractIdOrClientId){
+  var contracts=getContracts();
+  var contract=contracts.find(function(x){return x.id===contractIdOrClientId||x.id==='contract-'+contractIdOrClientId;});
+  if(!contract){var cl=getClients().find(function(x){return x.id===contractIdOrClientId;});
+    if(cl){contract=contracts.find(function(c){return c.status==='overdue'&&(c.tenantKt===cl.kt||c.landlordKt===cl.kt);})||contracts.find(function(c){return c.tenantKt===cl.kt||c.landlordKt===cl.kt;});}}
+  if(!contract){showToast('Enginn samningur fannst');return;}
+  var nextDue=getNextDueDate(contract);
+  var subject='Greiðsluáminning — '+(contract.tenantName||'')+' / '+(contract.ref||'');
+  var body='Kæri viðskiptavinur,\n\nVið sendum þér áminningu vegna greiðslu.\n\nViðskiptavinur: '+(contract.tenantName||'—')+'\nTilvísun: '+(contract.ref||'—')+'\nUpphæð: '+ISK(contract.rent||0)+'\nGjalddagi: '+(nextDue?FMT(nextDue):'—')+'\n\nVinsamlegast gangið frá greiðslu eins fljótt og auðið er.\n\nKveðja,\nKríta hf.\nkrita@krita.is\n519-5050';
+  window.location.href='mailto:andri@krita.is?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  showToast('Email opnaður');
+}
+
+// ===== LQ_SENDMAIL FIX =====
+function lq_sendEmail(){
+  var em=document.getElementById('landlordEmail').value;
+  var ref=lq_currentRef;
+  var sub='Kríta – Tilboð í fyrirframgreidda leigu ('+ref+')';
+  var bod='Góðan dag,\n\nVið hjá Kríta sendum þér hér með tilboð í fyrirframgreidda leigu.\n\nTilvísun: '+ref+'\n\nKveðja,\nKríta hf.\nkrita@krita.is\nSími: 519-5050';
+  var to='andri@krita.is'+(em?','+em:'');
+  window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(sub)+'&body='+encodeURIComponent(bod);
+  showToast('Email opnaður');
+}
+
+// ===== MARKAENT FIX (stofna client + sync Supabase) =====
+function lq_markAsSent(){
+  if(!lq_editingId)lq_saveQuote();
+  if(!lq_editingId)return;
+  var all=lq_getAll();
+  var idx=all.findIndex(function(x){return x.id===lq_editingId;});
+  if(idx<0)return;
+  all[idx].sentAt=new Date().toISOString();
+  lq_setAll(all);
+  try{
+    var q=all[idx];
+    var crmKey='krita_crm_contracts';
+    var crmAll=JSON.parse(_storage.getItem(crmKey)||'[]');
+    var crmIdx=crmAll.findIndex(function(x){return x.id==='lq_'+q.id;});
+    var newContractId='lq_'+q.id;
+    var crmC={id:newContractId,ref:q.refTitle?'PPR-'+q.refTitle:'PPR-'+q.id.slice(-4),
+      tenantName:q.tenantName||'',tenantKt:q.tenantKt||'',
+      landlordName:q.landlordName||'',landlordKt:q.landlordKt||'',
+      address:q.propertyAddress||'',amount:Math.round(q.purchasePrice||0),
+      rent:Math.round(q.rent||0),months:q.N||12,startDate:q.startDate||'',
+      status:'active',notes:'Tilboð samþykkt '+FMTLONG(new Date()),
+      createdAt:q.savedAt||new Date().toISOString(),sentAt:all[idx].sentAt,fromLeigukaup:true};
+    if(crmIdx>=0)crmAll[crmIdx]=crmC;else crmAll.unshift(crmC);
+    _storage.setItem(crmKey,JSON.stringify(crmAll));
+    if(_supa)_db.saveContract(crmC);
+    // Stofna/uppfæra client
+    if(q.landlordName||q.landlordKt){
+      var clientKey='krita_crm_clients';
+      var clients=JSON.parse(_storage.getItem(clientKey)||'[]');
+      var existIdx=clients.findIndex(function(x){return x.kt===q.landlordKt||(x.name===q.landlordName&&!q.landlordKt);});
+      var clientData={id:existIdx>=0?clients[existIdx].id:'cl_lq_'+q.id,
+        name:q.landlordName||'',kt:q.landlordKt||'',email:q.landlordEmail||'',phone:'',
+        notes:'Stofnaður úr Leigukaup '+crmC.ref,
+        contactName:'',contactTitle:'',contactEmail:q.landlordEmail||'',contactPhone:''};
+      if(existIdx>=0)clients[existIdx]=Object.assign({},clients[existIdx],clientData);
+      else clients.unshift(clientData);
+      _storage.setItem(clientKey,JSON.stringify(clients));
+      if(_supa)_db.saveClient(existIdx>=0?clients[existIdx]:clientData);
+    }
+    // Gátlisti check
+    var checkItems=typeof getChecklistItems==='function'?getChecklistItems():[];
+    var undone=checkItems.filter(function(i){return !JSON.parse(_storage.getItem('krita_check_cl_lq_'+q.id)||'{}')[i.id];});
+    showToast('✅ Tilboð samþykkt! Samningur stofnaður í CRM.');
+    if(undone.length>0){
+      setTimeout(function(){
+        alert('⚠️ '+undone.length+' atriði í gátlista eru ekki hökuð:\n'+undone.slice(0,5).map(function(i){return '• '+i.label;}).join('\n'));
+      },500);
+    }
+    setTimeout(function(){showPage('contracts');setTimeout(function(){openContract(newContractId);},300);},700);
+  }catch(e){console.warn('markAsSent villa:',e);showToast('Villa: '+e.message);}
+}
+
+// ===== RENDERCHECKLISTFIX - createElement version =====
+function renderChecklist(){
+  var o=getChecklist();
+  var el=document.getElementById('checklistItems');
+  if(!el)return;
+  var ITEMS=getChecklistItems();
+  if(!ITEMS||!ITEMS.length)return;
+  var total=ITEMS.length;
+  var done_count=ITEMS.filter(function(i){return o[i.id];}).length;
+  var pct=total>0?Math.round(done_count/total*100):0;
+  var bar=document.getElementById('checklistProgressBar');
+  if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'#22c55e':pct>=60?'#f59e0b':'var(--accent)';}
+  var lbl=document.getElementById('checklistProgressLabel');
+  if(lbl)lbl.innerHTML='<span style="font-weight:700;color:'+(pct===100?'#166534':pct>=60?'#854d0e':'var(--dark)')+'">'+pct+'%</span> <span style="color:var(--text2)">'+done_count+'/'+total+'</span>';
+  el.innerHTML='';
+  ITEMS.forEach(function(item){
+    var done=o[item.id];
+    var wrap=document.createElement('div');wrap.style.marginBottom='8px';
+    var row=document.createElement('div');
+    row.className='check-item'+(done?' done':'');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;border:0.5px solid var(--border);background:'+(done?'var(--light)':'white');
+    var box=document.createElement('div');
+    box.className='check-box'+(done?' on':'');
+    box.innerHTML=done?'&#10003;':'';
+    box.style.cssText='width:18px;height:18px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;'+(done?'background:var(--dark);border-color:var(--dark);color:white;':'');
+    (function(id){box.addEventListener('click',function(){toggleCheck(id);});})(item.id);
+    var txt=document.createElement('div');txt.style.cssText='flex:1;min-width:0';
+    var lbl2=document.createElement('div');lbl2.className='check-label';lbl2.textContent=item.label;
+    lbl2.style.cssText='font-size:13px;font-weight:600;cursor:pointer';
+    (function(id){lbl2.addEventListener('click',function(){toggleCheck(id);});})(item.id);
+    var desc=document.createElement('div');desc.style.cssText='font-size:11px;color:var(--text2);margin-top:1px';desc.textContent=item.desc||'';
+    txt.appendChild(lbl2);txt.appendChild(desc);
+    if(done){var dt=document.createElement('div');dt.className='check-date';dt.textContent=done.date||'';row.appendChild(box);row.appendChild(txt);row.appendChild(dt);}
+    else{row.appendChild(box);row.appendChild(txt);}
+    var flbl=document.createElement('label');flbl.style.cssText='cursor:pointer;margin-left:8px';
+    var ficon=document.createElement('span');ficon.textContent='📎';ficon.style.opacity=getCheckFiles(item.id).length?'1':'0.35';
+    var finput=document.createElement('input');finput.type='file';finput.multiple=true;finput.style.display='none';
+    (function(id){finput.addEventListener('change',function(){addCheckFile(id,this);});})(item.id);
+    flbl.appendChild(ficon);flbl.appendChild(finput);row.appendChild(flbl);
+    wrap.appendChild(row);el.appendChild(wrap);
+  });
+}
+
+// ===== TOGGLECHECK FIX (update stat box) =====
+function toggleCheck(id){
+  var o=getChecklist();
+  if(o[id])delete o[id];else o[id]={done:true,date:FMT(new Date())};
+  saveChecklist(o);
+  renderChecklist();
+  // Update overview stat box
+  var ITEMS=getChecklistItems();
+  var done=ITEMS.filter(function(i){return o[i.id];}).length;
+  var pct=Math.round(done/ITEMS.length*100);
+  var stat=document.getElementById('crmChecklistStat');
+  if(stat)stat.innerHTML='<span style="font-size:18px;font-weight:700">'+done+'</span><span style="font-size:13px;color:var(--text2)">/'+ITEMS.length+'</span>';
+  var cbar=document.getElementById('crmChecklistBar');
+  if(cbar){cbar.style.width=pct+'%';cbar.style.background=pct===100?'#22c55e':pct>=60?'#f59e0b':'var(--accent)';}
+}
+
+// ===== RENDERLIENT FIX - back nav with createElement =====
+function lq_renderClient(q){
+  var el=document.getElementById('clientViewContent');
+  el.innerHTML='';
+  var rcNav=document.createElement('div');
+  rcNav.className='no-print';
+  rcNav.style.cssText='display:flex;gap:12px;margin-bottom:12px;align-items:center;background:#f4f6f5;padding:10px 16px;border-radius:6px;border:0.5px solid #c8ddd0';
+  var btn1=document.createElement('button');btn1.textContent='← Reikningur';
+  btn1.style.cssText='background:none;border:none;color:#0d3320;font-weight:600;cursor:pointer;font-size:13px';
+  btn1.onclick=function(){lq_switchTab('calculator');};
+  var sep=document.createElement('span');sep.textContent='|';sep.style.cssText='color:#c8ddd0;margin:0 4px';
+  var btn2=document.createElement('button');btn2.textContent='📋 Vistaðir reikningar';
+  btn2.style.cssText='background:none;border:none;color:#0d3320;font-weight:600;cursor:pointer;font-size:13px';
+  btn2.onclick=function(){lq_switchTab('saved');};
+  rcNav.appendChild(btn1);rcNav.appendChild(sep);rcNav.appendChild(btn2);
+  el.appendChild(rcNav);
+  var rcContent=document.createElement('div');
+  rcContent.innerHTML=lq_singleClientHTML(q,lq_currentRef,'');
+  el.appendChild(rcContent);
+}
+
+// ===== AUTH & INIT =====
+async function doLogin(){
+  var email=document.getElementById('loginEmail').value;
+  var password=document.getElementById('loginPassword').value;
+  var errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+  if(!email||!password){errEl.textContent='Fylltu inn netfang og lykilorð';errEl.style.display='block';return;}
+  if(!_supa){errEl.textContent='Tenging við gagnagrunn mistókst';errEl.style.display='block';return;}
+  console.log('Login attempt:', email);
+  var result=await _supa.auth.signInWithPassword({email:email,password:password});
+  console.log('Login result:', result.data?.session ? 'OK' : 'FAILED', result.error);
+  if(result.error){
+    console.error('Login villa:', result.error);
+    errEl.textContent='Villa: '+result.error.message;
+    errEl.style.display='block';
+    return;
+  }
+  document.getElementById('loginOverlay').style.display='none';
+  document.querySelector('.nav').style.display='flex';
+  document.querySelectorAll('.page').forEach(function(p){p.style.display='';});
+  await initFromSupabase();
+}
+
+async function initFromSupabase(){
+  if(!_supa){
+    addDemoData();
+    renderDashboard();
+    return;
+  }
+  showToast('Tengist...');
+  try{
+    // Sækja gögn frá Supabase - þetta yfirskrifar localStorage
+    var results=await Promise.all([
+      _db.getContracts(),
+      _db.getClients(), 
+      _db.getQuotes()
+    ]);
+    var contracts=results[0];
+    var clients=results[1];
+    // Ef gagnagrunnur er tómur - ekki bæta við demo
+    console.log('Supabase: '+contracts.length+' samningar, '+clients.length+' clients');
+    renderDashboard();
+    showToast('✓ '+contracts.length+' samningar sóttir');
+  }catch(e){
+    console.warn('initFromSupabase villa:',e);
+    showToast('Villa við að sækja gögn');
+    renderDashboard();
+  }
+}
+
+function addDemoData(){
+  if(getContracts().length>0)return;
+  // Ekki bæta við demo ef við erum að nota Supabase
+  if(_supa)return;
+  var now=new Date();
+  setContracts([
+    {id:'demo1',ref:'PPR-001',tenantName:'Gerða ehf.',tenantKt:'461020-0620',landlordName:'Garðatorg 7 ehf.',landlordKt:'630316-4210',address:'Garðatorg 7',amount:2771374,rent:508136,months:6,startDate:new Date(now.getFullYear(),now.getMonth()-2,1).toISOString().split('T')[0],status:'active',createdAt:new Date(now.getFullYear(),now.getMonth()-2,1).toISOString()},
+    {id:'demo2',ref:'PPR-002',tenantName:'Sparnaður ehf.',tenantKt:'570902-2450',landlordName:'Garðatorg 7 ehf.',landlordKt:'630316-4210',address:'Háaleitisbraut 68',amount:12176599,rent:1210879,months:12,startDate:new Date(now.getFullYear(),now.getMonth()-5,1).toISOString().split('T')[0],status:'active',createdAt:new Date(now.getFullYear(),now.getMonth()-5,1).toISOString()},
+    {id:'demo3',ref:'PPR-003',tenantName:'Pizza-Pizza ehf.',tenantKt:'480293-2669',landlordName:'Premium ehf.',landlordKt:'561210-0630',address:'Skólavörðustígur 22',amount:3459596,rent:344033,months:12,startDate:new Date(now.getFullYear(),now.getMonth()-8,1).toISOString().split('T')[0],status:'done',createdAt:new Date(now.getFullYear(),now.getMonth()-8,1).toISOString()},
+  ]);
+  setClients([
+    {id:'cl1',name:'Garðatorg 7 ehf.',kt:'630316-4210',email:'gestur@sparnadur.is',phone:'553-4200',contactName:'Gestur Sigurbjörnsson',contactTitle:'Framkvæmdastjóri',contactEmail:'gestur@sparnadur.is',contactPhone:'553-4200'},
+  ]);
+}
+
+function _init(){
+  document.querySelectorAll('.modal-overlay').forEach(function(o){
+    o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});
+  });
+  // Leiga event listeners
+  var monthsEl=document.getElementById('months');
+  var costEl=document.getElementById('costMonths');
+  var rentEl=document.getElementById('monthlyRent');
+  var startEl=document.getElementById('startDate');
+  if(monthsEl)monthsEl.addEventListener('input',function(){
+    if(!lq_costMonthsManual){var N=parseInt(this.value)||12;var auto=parseFloat((N/6).toFixed(1));if(costEl)costEl.value=auto;}
+    lq_update();
+  });
+  if(costEl)costEl.addEventListener('input',function(){lq_costMonthsManual=true;lq_update();});
+  if(rentEl)rentEl.addEventListener('input',lq_update);
+  if(startEl)startEl.addEventListener('input',lq_update);
+  if(startEl)startEl.value=new Date().toISOString().split('T')[0];
+  if(typeof lq_update==='function')lq_update();
+  // KT formatting
+  var ktEls=['tenantKt','landlordKt'];
+  ktEls.forEach(function(id){var el=document.getElementById(id);if(el&&typeof lq_fmtKt==='function')el.addEventListener('input',function(){this.value=lq_fmtKt(this.value);});});
+
+  if(_supa){
+    _supa.auth.getSession().then(function(result){
+      if(result.error){
+        console.warn('Auth villa:',result.error);
+        // Sýna login í öllum tilvikum þegar villa
+        document.getElementById('loginOverlay').style.display='flex';
+        document.querySelector('.nav').style.display='none';
+        return;
+      }
+      if(result.data&&result.data.session){
+        document.getElementById('loginOverlay').style.display='none';
+        document.querySelector('.nav').style.display='flex';
+        document.querySelectorAll('.page').forEach(function(p){p.style.display='';});
+        initFromSupabase();
+      } else {
+        document.getElementById('loginOverlay').style.display='flex';
+        document.querySelector('.nav').style.display='none';
+      }
+    }).catch(function(e){
+      console.warn('getSession exception:',e);
+      document.getElementById('loginOverlay').style.display='flex';
+      document.querySelector('.nav').style.display='none';
+    });
+  } else {
+    addDemoData();
+    renderDashboard();
+  }
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',_init);
+}else{
+  _init();
+}
+
 </script>
 </body>
 </html>
