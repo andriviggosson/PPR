@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kríta – Innra kerfi</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ===== CRM CSS ===== */
 
@@ -350,6 +351,26 @@ body.in-leigukaup.lq-client-view .lq-header-only { display:none!important }
 </style>
 </head>
 <body>
+
+<!-- LOGIN MODAL -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#0d3320;z-index:9999;align-items:center;justify-content:center;flex-direction:column">
+  <div style="background:white;border-radius:12px;padding:2.5rem;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="margin-bottom:12px">
+        <path d="M26 7L14 20l12 13" stroke="#0d3320" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div style="font-size:22px;font-weight:800;color:#0d3320">Kríta</div>
+      <div style="font-size:13px;color:#5a7a65;margin-top:4px">Skráðu þig inn</div>
+    </div>
+    <div id="loginError" style="display:none;background:#fee2e2;color:#991b1b;padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:12px"></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="loginEmail" type="email" placeholder="Netfang" style="padding:10px 14px;border:1px solid #c8ddd0;border-radius:8px;font-size:14px;outline:none;width:100%"/>
+      <input id="loginPassword" type="password" placeholder="Lykilorð" style="padding:10px 14px;border:1px solid #c8ddd0;border-radius:8px;font-size:14px;outline:none;width:100%"/>
+      <button onclick="doLogin()" style="background:#0d3320;color:white;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%">Skrá inn</button>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:12px;color:#5a7a65">Kríta hf. — Innra kerfi</div>
+  </div>
+</div>
 
 <nav class="nav">
   <a class="nav-logo" href="#" onclick="showPage('dashboard')">
@@ -826,6 +847,120 @@ var _storage = (function(){
     };
   }
 })();
+
+// ============ SUPABASE ============
+const SUPA_URL = 'https://irdduicaobmexdpndxov.supabase.co';
+const SUPA_KEY = 'sb_publishable_HFsNMcZzboiG1FMnxl_NJA_hQY87-lw';
+var _supa = null;
+try {
+  _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+  console.log('Supabase tengdur');
+} catch(e) {
+  console.warn('Supabase villa, nota localStorage:', e);
+}
+
+var _db = {
+  async getContracts() {
+    if(!_supa) return getContracts_local();
+    const {data,error} = await _supa.from('contracts').select('*').order('created_at',{ascending:false});
+    if(error){console.warn(error);return getContracts_local();}
+    const remote = data.map(dbToContract);
+    _storage.setItem('krita_crm_contracts',JSON.stringify(remote));
+    return remote;
+  },
+  async saveContract(q) {
+    let all=getContracts_local();
+    const i=all.findIndex(x=>x.id===q.id);
+    if(i>=0)all[i]=q;else all.unshift(q);
+    _storage.setItem('krita_crm_contracts',JSON.stringify(all));
+    if(!_supa)return;
+    const {error}=await _supa.from('contracts').upsert(contractToDb(q));
+    if(error)console.warn('saveContract:',error);
+  },
+  async deleteContract(id) {
+    let all=getContracts_local();
+    _storage.setItem('krita_crm_contracts',JSON.stringify(all.filter(x=>x.id!==id)));
+    if(!_supa)return;
+    await _supa.from('contracts').delete().eq('id',id);
+  },
+  async getClients() {
+    if(!_supa) return getClients_local();
+    const {data,error} = await _supa.from('clients').select('*').order('created_at',{ascending:false});
+    if(error){console.warn(error);return getClients_local();}
+    const remote = data.map(dbToClient);
+    _storage.setItem('krita_crm_clients',JSON.stringify(remote));
+    return remote;
+  },
+  async saveClient(q) {
+    let all=getClients_local();
+    const i=all.findIndex(x=>x.id===q.id);
+    if(i>=0)all[i]=q;else all.unshift(q);
+    _storage.setItem('krita_crm_clients',JSON.stringify(all));
+    if(!_supa)return;
+    const {error}=await _supa.from('clients').upsert(clientToDb(q));
+    if(error)console.warn('saveClient:',error);
+  },
+  async deleteClient(id) {
+    let all=getClients_local();
+    _storage.setItem('krita_crm_clients',JSON.stringify(all.filter(x=>x.id!==id)));
+    if(!_supa)return;
+    await _supa.from('clients').delete().eq('id',id);
+  },
+  async getQuotes() {
+    if(!_supa) return lq_getAll_local();
+    const {data,error} = await _supa.from('quotes').select('*').order('saved_at',{ascending:false});
+    if(error){console.warn(error);return lq_getAll_local();}
+    const remote = data.map(dbToQuote);
+    _storage.setItem('krita_quotes',JSON.stringify(remote));
+    return remote;
+  },
+  async saveQuote(q) {
+    let all=lq_getAll_local();
+    const i=all.findIndex(x=>x.id===q.id);
+    if(i>=0)all[i]=q;else all.unshift(q);
+    _storage.setItem('krita_quotes',JSON.stringify(all));
+    if(!_supa)return;
+    const {error}=await _supa.from('quotes').upsert(quoteToDb(q));
+    if(error)console.warn('saveQuote:',error);
+  },
+  async deleteQuote(id) {
+    let all=lq_getAll_local();
+    _storage.setItem('krita_quotes',JSON.stringify(all.filter(x=>x.id!==id)));
+    if(!_supa)return;
+    await _supa.from('quotes').delete().eq('id',id);
+  },
+  async getPaidMonths(contractId) {
+    if(!_supa){try{return JSON.parse(_storage.getItem('krita_paid_'+contractId)||'[]')}catch(e){return[];}}
+    const {data,error}=await _supa.from('paid_months').select('month_index').eq('contract_id',contractId);
+    if(error){try{return JSON.parse(_storage.getItem('krita_paid_'+contractId)||'[]')}catch(e){return[];}}
+    const arr=data.map(x=>x.month_index);
+    _storage.setItem('krita_paid_'+contractId,JSON.stringify(arr));
+    return arr;
+  },
+  async togglePaidMonth(contractId,monthIndex) {
+    const paid=await this.getPaidMonths(contractId);
+    const idx=paid.indexOf(monthIndex);
+    if(idx>=0)paid.splice(idx,1);else paid.push(monthIndex);
+    _storage.setItem('krita_paid_'+contractId,JSON.stringify(paid));
+    if(!_supa)return paid;
+    if(idx>=0){await _supa.from('paid_months').delete().eq('contract_id',contractId).eq('month_index',monthIndex);}
+    else{await _supa.from('paid_months').insert({contract_id:contractId,month_index:monthIndex});}
+    return paid;
+  }
+};
+
+function contractToDb(c){return{id:c.id,ref:c.ref||null,tenant_name:c.tenantName||null,tenant_kt:c.tenantKt||null,landlord_name:c.landlordName||null,landlord_kt:c.landlordKt||null,address:c.address||null,amount:c.amount||0,rent:c.rent||0,months:c.months||12,start_date:c.startDate||null,status:c.status||'active',notes:c.notes||null,from_leigukaup:c.fromLeigukaup||false,approved_at:c.approvedAt||null,sent_at:c.sentAt||null,created_at:c.createdAt||new Date().toISOString(),updated_at:new Date().toISOString()};}
+function dbToContract(d){return{id:d.id,ref:d.ref||'',tenantName:d.tenant_name||'',tenantKt:d.tenant_kt||'',landlordName:d.landlord_name||'',landlordKt:d.landlord_kt||'',address:d.address||'',amount:d.amount||0,rent:d.rent||0,months:d.months||12,startDate:d.start_date||'',status:d.status||'active',notes:d.notes||'',fromLeigukaup:d.from_leigukaup||false,approvedAt:d.approved_at||null,sentAt:d.sent_at||null,createdAt:d.created_at||new Date().toISOString()};}
+function clientToDb(c){return{id:c.id,name:c.name||null,kt:c.kt||null,email:c.email||null,phone:c.phone||null,notes:c.notes||null,contact_name:c.contactName||null,contact_title:c.contactTitle||null,contact_email:c.contactEmail||null,contact_phone:c.contactPhone||null};}
+function dbToClient(d){return{id:d.id,name:d.name||'',kt:d.kt||'',email:d.email||'',phone:d.phone||'',notes:d.notes||'',contactName:d.contact_name||'',contactTitle:d.contact_title||'',contactEmail:d.contact_email||'',contactPhone:d.contact_phone||''};}
+function quoteToDb(q){return{id:q.id,ref_title:q.refTitle||null,tenant_name:q.tenantName||null,tenant_kt:q.tenantKt||null,property_address:q.propertyAddress||null,landlord_name:q.landlordName||null,landlord_kt:q.landlordKt||null,landlord_email:q.landlordEmail||null,rent:q.rent||0,n:q.N||12,cost_months:q.costMonths||2,fee_rate:q.feeRate||0,start_date:q.startDate||null,purchase_price:q.purchasePrice||0,total_fees:q.totalFees||0,sent_at:q.sentAt||null,saved_at:q.savedAt||new Date().toISOString()};}
+function dbToQuote(d){return{id:d.id,refTitle:d.ref_title||'',tenantName:d.tenant_name||'',tenantKt:d.tenant_kt||'',propertyAddress:d.property_address||'',landlordName:d.landlord_name||'',landlordKt:d.landlord_kt||'',landlordEmail:d.landlord_email||'',rent:d.rent||0,N:d.n||12,costMonths:d.cost_months||2,feeRate:d.fee_rate||0,startDate:d.start_date||'',purchasePrice:d.purchase_price||0,totalFees:d.total_fees||0,sentAt:d.sent_at||null,savedAt:d.saved_at||new Date().toISOString()};}
+
+// Local helpers (original functions renamed)
+function getContracts_local(){try{return JSON.parse(_storage.getItem('krita_crm_contracts')||'[]')}catch(e){return[]}}
+function getClients_local(){try{return JSON.parse(_storage.getItem('krita_crm_clients')||'[]')}catch(e){return[]}}
+function lq_getAll_local(){try{return JSON.parse(_storage.getItem('krita_quotes')||'[]')}catch(e){return[]}}
+
 
 // ============ HELPERS ============
 function ISK(v){return Math.round(v||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')+' kr.'}
@@ -2237,14 +2372,109 @@ var toastTimer;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity='0',2500)}
 
 // Close modal on overlay click
+// ============ AUTH ============
+async function checkAuth(){
+  if(!_supa){return;}
+  const {data:{session}} = await _supa.auth.getSession();
+  if(!session){
+    document.getElementById('loginOverlay').style.display='flex';
+    document.querySelector('.nav').style.display='none';
+    document.querySelectorAll('.page').forEach(function(p){p.style.display='none';});
+  } else {
+    document.getElementById('loginOverlay').style.display='none';
+    document.querySelector('.nav').style.display='flex';
+  }
+}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value;
+  const password=document.getElementById('loginPassword').value;
+  const errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+  if(!email||!password){errEl.textContent='Fylltu inn netfang og lykilorð';errEl.style.display='block';return;}
+  if(!_supa){errEl.textContent='Tenging við gagnagrunn mistókst';errEl.style.display='block';return;}
+  const {data,error}=await _supa.auth.signInWithPassword({email,password});
+  if(error){errEl.textContent='Rangt netfang eða lykilorð';errEl.style.display='block';return;}
+  document.getElementById('loginOverlay').style.display='none';
+  document.querySelector('.nav').style.display='flex';
+  document.querySelectorAll('.page').forEach(function(p){p.style.display='';});
+  initFromSupabase();
+}
+
+async function initFromSupabase(){
+  addDemoData();
+  if(!_supa){renderDashboard();return;}
+  showToast('Sæki gögn...');
+  try{
+    const [contracts,clients,quotes]=await Promise.all([_db.getContracts(),_db.getClients(),_db.getQuotes()]);
+    renderDashboard();
+    if(document.getElementById('page-contracts').classList.contains('active'))renderContracts();
+    if(document.getElementById('page-clients').classList.contains('active'))renderClients();
+    showToast('');
+  }catch(e){
+    console.warn('Supabase init error:',e);
+    renderDashboard();
+  }
+}
+
+// Override saveContract/saveClient/lq_saveQuote til að synca við Supabase
+var _origSC=saveContract;
+function saveContract(){
+  _origSC();
+  var all=getContracts();
+  if(all.length>0&&_supa){var latest=all.find(function(x){return x.id===editingContractId;})||all[0];_db.saveContract(latest);}
+}
+var _origSCl=saveClient;
+function saveClient(){
+  _origSCl();
+  var all=getClients();
+  if(all.length>0&&_supa){var latest=all.find(function(x){return x.id===editingClientId;})||all[0];_db.saveClient(latest);}
+}
+var _origLqSQ=lq_saveQuote;
+function lq_saveQuote(){
+  _origLqSQ();
+  if(_supa){var all=lq_getAll();if(all.length>0)_db.saveQuote(all[0]);}
+}
+var _origDelC=deleteContract;
+function deleteContract(id){_origDelC(id);if(_supa)_db.deleteContract(id);}
+var _origDelCl=deleteClient;
+function deleteClient(id){_origDelCl(id);if(_supa)_db.deleteClient(id);}
+var _origDelQ=lq_deleteQuote;
+function lq_deleteQuote(id){_origDelQ(id);if(_supa)_db.deleteQuote(id);}
+
+// Override togglePayment til að bruka _db async
+var _origTP=togglePayment;
+function togglePayment(cid,month){
+  if(_supa){
+    _db.togglePaidMonth(cid,month).then(function(){
+      var contract=getContracts().find(function(x){return x.id===cid;});
+      if(contract)document.getElementById('crmPaySchedule').innerHTML=renderPaySchedule(contract);
+    });
+  } else {
+    _origTP(cid,month);
+  }
+}
+
 function _init(){
   if(typeof addDemoData==='undefined')return setTimeout(_init,10);
   document.querySelectorAll('.modal-overlay').forEach(function(o){
     o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});
   });
-  addDemoData();
   applyLang();
-  renderDashboard();
+  if(_supa){
+    _supa.auth.onAuthStateChange(function(event,session){
+      if(event==='SIGNED_OUT'||event==='TOKEN_REFRESHED'){}
+    });
+    checkAuth().then(function(){
+      _supa.auth.getSession().then(function(result){
+        if(result.data.session){initFromSupabase();}
+        else{addDemoData();renderDashboard();}
+      });
+    });
+  } else {
+    addDemoData();
+    renderDashboard();
+  }
 }
 if(document.readyState==='loading'){
   document.addEventListener('DOMContentLoaded',_init);
