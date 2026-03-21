@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kríta – Fyrirframgreidd leiga</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --krita-dark:   #0d3320;
+  --krita-mid:    #1a4d32;
+  --krita-green:  #3dca72;
+  --krita-light:  #e8f5ee;
+  --krita-accent: #22c55e;
+  --bg:    #ffffff;
+  --bg2:   #f4f6f4;
+  --bg3:   #eef2ee;
+  --text:  #0d1f12;
+  --text2: #4a6054;
+  --border: rgba(13,51,32,0.12);
+  --border2: rgba(13,51,32,0.22);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); font-size: 15px; min-height: 100vh; }
+.app { max-width: 980px; margin: 0 auto; padding: 2rem 1rem; }
+.header { display: flex; align-items: center; gap: 14px; margin-bottom: 2rem; padding: 14px 20px; background: var(--krita-dark); border-radius: var(--radius); }
+.krita-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.krita-wordmark { color: white; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+.header-title { color: rgba(255,255,255,0.55); font-size: 13px; margin-left: 4px; }
+.header-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.2); }
+.tabs { display: flex; gap: 2px; margin-bottom: 1.5rem; background: var(--bg2); border-radius: var(--radius); padding: 4px; width: fit-content; border: 0.5px solid var(--border); }
+.tab { padding: 7px 18px; font-size: 13px; font-weight: 500; color: var(--text2); border: none; background: none; cursor: pointer; border-radius: var(--radius-sm); transition: all .15s; }
+.tab.active { background: var(--krita-dark); color: white; }
+.panel { display: none; } .panel.active { display: block; }
+.card { background: white; border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.section-title { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 14px; }
+.subsection-label { font-size: 11px; font-weight: 600; color: var(--krita-green); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.field input { font-size: 14px; padding: 9px 11px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: white; color: var(--text); outline: none; transition: border-color .15s; width: 100%; }
+.field input:focus { border-color: var(--krita-dark); box-shadow: 0 0 0 2px rgba(13,51,32,0.08); }
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+.metric { background: var(--bg2); border-radius: var(--radius-sm); padding: 1rem; border: 0.5px solid var(--border); }
+.metric-label { font-size: 11px; color: var(--text2); font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .04em; }
+.metric-value { font-size: 19px; font-weight: 700; color: var(--text); }
+.metric-value.green { color: var(--krita-dark); }
+.metric-value.red { color: #c0392b; }
+.metric-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.formula-note { font-size: 12px; color: #5a6e50; background: #f0f8f2; border: 0.5px solid #b8dfc4; border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 1rem; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 9px 10px; font-size: 11px; font-weight: 600; color: var(--text2); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .04em; background: var(--bg2); }
+td { padding: 8px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--krita-light); }
+.btn { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: white; color: var(--text); cursor: pointer; transition: all .15s; }
+.btn:hover { background: var(--bg2); }
+.btn-dark { background: var(--krita-dark); color: white; border-color: var(--krita-dark); }
+.btn-dark:hover { background: var(--krita-mid); }
+.btn-green { background: var(--krita-accent); color: white; border-color: var(--krita-accent); font-weight: 600; }
+.btn-green:hover { background: #1da554; }
+.btn-outline { background: white; color: var(--krita-dark); border: 1px solid var(--krita-dark); }
+.btn-outline:hover { background: var(--krita-light); }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-danger { border-color: #ffc0a8; color: #c0392b; }
+.btn-danger:hover { background: #fff0ea; }
+.row-flex { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.saved-list { display: flex; flex-direction: column; gap: 8px; }
+.saved-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--bg2); border-radius: var(--radius-sm); border: 0.5px solid var(--border); transition: all .15s; }
+.saved-item.selected { border-color: var(--krita-dark); background: var(--krita-light); }
+.saved-item-check { width: 20px; height: 20px; border: 1.5px solid var(--border2); border-radius: 5px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 11px; font-weight: 700; transition: all .15s; color: white; }
+.saved-item-check.checked { background: var(--krita-dark); border-color: var(--krita-dark); }
+.saved-item-info { flex: 1; min-width: 0; cursor: pointer; }
+.saved-item-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.saved-item-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.saved-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.empty-state { text-align: center; padding: 2.5rem; color: var(--text2); font-size: 14px; }
+.bundle-bar { background: var(--krita-dark); color: white; border-radius: var(--radius-sm); padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 12px; flex-wrap: wrap; }
+.bundle-bar .btn { background: rgba(255,255,255,0.12); color: white; border-color: rgba(255,255,255,0.25); }
+.bundle-bar .btn:hover { background: rgba(255,255,255,0.2); }
+.bundle-bar .btn-green { background: var(--krita-accent); border-color: var(--krita-accent); }
+#toast { position: fixed; bottom: 24px; right: 24px; background: var(--krita-dark); color: white; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 999; }
+
+/* ---- PRINT ---- */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: white; font-size: 10pt; }
+  @page { margin: 1.5cm; size: A4; }
+  .no-print { display: none !important; }
+  .app { padding: 0; max-width: 100%; }
+  #panel-calculator, #panel-saved { display: none !important; }
+  #panel-client { display: block !important; }
+  .page-break { page-break-before: always; break-before: page; }
+  .print-section { page-break-inside: avoid; }
+  .card { border: 1px solid #c8ddd0 !important; page-break-inside: avoid; margin-bottom: 0.6rem; border-radius: 0 !important; }
+  .pdf-dark-bar { background: #0d3320 !important; }
+  .pdf-metric { background: #f0f8f4 !important; border: 1px solid #b8dfc4 !important; }
+  .pdf-table th { background: #f0f8f4 !important; }
+  .sig-line { border-bottom: 1px solid #0d3320 !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header no-print">
+    <a class="krita-logo" href="https://krita.is" target="_blank">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+        <path d="M17 4.5 L9 13 L17 21.5" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="krita-wordmark">Kríta</span>
+    </a>
+    <div class="header-sep"></div>
+    <span class="header-title">Fyrirframgreidd leiga</span>
+  </div>
+
+  <div class="tabs no-print">
+    <button class="tab active" onclick="switchTab('calculator')">Reikningur</button>
+    <button class="tab" onclick="switchTab('saved')">Vistaðir reikningar</button>
+    <button class="tab" onclick="switchTab('client')">Client view</button>
+  </div>
+
+  <!-- CALCULATOR -->
+  <div id="panel-calculator" class="panel active">
+    <div class="card">
+      <div class="section-title">Upplýsingar um samning</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        <div>
+          <div class="subsection-label">Leigjandi</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="field"><label>Nafn leigjanda</label><input type="text" id="tenantName" placeholder="t.d. Leigan ehf." /></div>
+            <div class="field"><label>Kennitala</label><input type="text" id="tenantKt" placeholder="000000-0000" maxlength="11" /></div>
+            <div class="field"><label>Heimilisfang eignar</label><input type="text" id="propertyAddress" placeholder="t.d. Borgartún 26, 105 Reykjavík" /></div>
+          </div>
+        </div>
+        <div>
+          <div class="subsection-label">Leigusali</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="field"><label>Nafn leigusala</label><input type="text" id="landlordName" placeholder="t.d. Húsaleigan ehf." /></div>
+            <div class="field"><label>Kennitala</label><input type="text" id="landlordKt" placeholder="000000-0000" maxlength="11" /></div>
+            <div class="field"><label>Netfang leigusala</label><input type="email" id="landlordEmail" placeholder="t.d. leiga@fyrirtaeki.is" /></div>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:0.5px solid var(--border);padding-top:1.25rem">
+        <div class="subsection-label">Lánsskilmálar</div>
+        <div class="inputs-grid">
+          <div class="field"><label>Mánaðarleg leiga (ISK)</label><input type="number" id="monthlyRent" value="225000" step="1000" /></div>
+          <div class="field"><label>Fjöldi mánaða (N)</label><input type="number" id="months" value="12" min="1" max="36" /></div>
+          <div class="field"><label>Mánaðaleg gjaldtaka (%)</label><input type="number" id="feeRate" value="1.35" step="0.01" /></div>
+          <div class="field"><label>Dagsetning fyrstu greiðslu</label><input type="date" id="startDate" /></div>
+        </div>
+      </div>
+    </div>
+    <div class="formula-note" id="formulaNote"></div>
+    <div class="metrics" id="metrics"></div>
+    <div class="card">
+      <div class="row-flex">
+        <div class="section-title" style="margin:0">Mánaðarlegar greiðslur</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm btn-dark" onclick="saveQuote()">Vista reikning</button>
+          <button class="btn btn-sm btn-green" onclick="switchTab('client')">Client view &#8594;</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table id="scheduleTable"></table></div>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div id="panel-saved" class="panel">
+    <div id="bundleBar" style="display:none"></div>
+    <div class="card">
+      <div class="row-flex">
+        <div class="section-title" style="margin:0">Vistaðir reikningar</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="savedCount" style="font-size:12px;color:var(--text2)"></span>
+          <button class="btn btn-sm" id="selectAllBtn" onclick="toggleSelectAll()" style="display:none">Velja alla</button>
+        </div>
+      </div>
+      <div id="savedList"></div>
+    </div>
+  </div>
+
+  <!-- CLIENT VIEW -->
+  <div id="panel-client" class="panel">
+    <div id="clientViewContent"></div>
+    <div class="no-print" style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-dark" onclick="window.print()">&#128438; Prenta / Vista sem PDF</button>
+      <button class="btn btn-outline" id="emailBtn" onclick="sendEmail()">&#9993; Senda í tölvupósti</button>
+      <button class="btn" onclick="switchTab('calculator')">&#8592; Til baka</button>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+function ISK(v) {
+  return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr.';
+}
+const PCT = v => parseFloat(v).toFixed(2) + '%';
+function FMT(d) {
+  if(!d) return '';
+  const dt = (d instanceof Date) ? d : new Date(d);
+  if(isNaN(dt)) return '';
+  return String(dt.getDate()).padStart(2,'0') + '.' + String(dt.getMonth()+1).padStart(2,'0') + '.' + dt.getFullYear();
+}
+function fmtKt(v) {
+  const d = v.replace(/\D/g,'');
+  if(d.length <= 6) return d;
+  return d.slice(0,6) + '-' + d.slice(6,10);
+}
+function offerRef() {
+  const now = new Date();
+  return 'KRL-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + '-' + Math.floor(1000 + Math.random()*9000);
+}
+function expiryDate() {
+  const d = new Date(); d.setDate(d.getDate() + 30); return FMT(d);
+}
+
+let selectedIds = new Set();
+let _currentRef = offerRef();
+
+function addMonths(date, n) {
+  const d = new Date(date); d.setMonth(d.getMonth() + n); return d;
+}
+function calcFromQ(q) {
+  const rent = q.rent, N = q.N, feeRate = q.feeRate / 100;
+  const totalRent = rent * N;
+  const monthlyFee = totalRent * feeRate;
+  const totalFees = monthlyFee * N;
+  const purchasePrice = totalRent - totalFees;
+  const startDate = q.startDate ? new Date(q.startDate) : new Date();
+  const rows = [];
+  let out = totalRent;
+  for(let i = 0; i < N; i++) {
+    const opening = out, closing = Math.max(0, opening - rent);
+    rows.push({ month:i+1, date:addMonths(startDate,i), opening, fee:monthlyFee, rent, closing });
+    out = closing;
+  }
+  return { rent, N, feeRate, totalRent, totalFees, purchasePrice, monthlyFee, rows };
+}
+function calc() {
+  const rent = parseFloat(document.getElementById('monthlyRent').value)||0;
+  const N = parseInt(document.getElementById('months').value)||12;
+  const feeRate = (parseFloat(document.getElementById('feeRate').value)||1.35)/100;
+  const sd = document.getElementById('startDate').value;
+  const startDate = sd ? new Date(sd) : new Date();
+  const totalRent = rent*N, monthlyFee = totalRent*feeRate, totalFees = monthlyFee*N, purchasePrice = totalRent-totalFees;
+  const rows = []; let out = totalRent;
+  for(let i=0;i<N;i++){const opening=out,closing=Math.max(0,opening-rent);rows.push({month:i+1,date:addMonths(startDate,i),opening,fee:monthlyFee,rent,closing});out=closing;}
+  return { rent, N, feeRate, totalRent, totalFees, purchasePrice, monthlyFee, rows };
+}
+
+/* Auto-format kennitala fields */
+['tenantKt','landlordKt'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    const pos = this.selectionStart;
+    this.value = fmtKt(this.value);
+  });
+});
+
+function update() {
+  const c = calc();
+  document.getElementById('formulaNote').innerHTML =
+    'Gjald á mánuð: ' + ISK(c.totalRent) + ' &times; ' + PCT(c.feeRate) + ' = <strong>' + ISK(c.monthlyFee) + '</strong> &mdash; fast á hverjum mánuði';
+  document.getElementById('metrics').innerHTML =
+    '<div class="metric"><div class="metric-label">Heildarleigutekjur</div><div class="metric-value">' + ISK(c.totalRent) + '</div><div class="metric-sub">' + c.N + ' mán &times; ' + ISK(c.rent) + '</div></div>' +
+    '<div class="metric"><div class="metric-label">Greiðsla til leigusala</div><div class="metric-value green">' + ISK(c.purchasePrice) + '</div><div class="metric-sub">Greiðist við undirritun</div></div>' +
+    '<div class="metric"><div class="metric-label">Heildarkostnaður</div><div class="metric-value red">' + ISK(c.totalFees) + '</div><div class="metric-sub">' + ISK(c.monthlyFee) + '/mán &times; ' + c.N + ' mán</div></div>';
+  document.getElementById('scheduleTable').innerHTML =
+    '<thead><tr><th>#</th><th>Dagsetning</th><th>Eftirst. (opnun)</th><th>Kríta gjald</th><th>Leiga inn</th><th>Eftirst. (lokun)</th></tr></thead>' +
+    '<tbody>' + c.rows.map(r =>
+      '<tr><td style="color:var(--text2)">' + r.month + '</td><td>' + FMT(r.date) + '</td><td>' + ISK(r.opening) + '</td><td style="color:#c0392b">' + ISK(r.fee) + '</td><td>' + ISK(r.rent) + '</td><td style="font-weight:500">' + ISK(r.closing) + '</td></tr>'
+    ).join('') + '</tbody>';
+}
+
+/* ---- PDF COMPONENTS ---- */
+function pdfHeader(ref, pageLabel) {
+  return '<div class="pdf-dark-bar" style="background:#0d3320;padding:16px 24px;display:flex;justify-content:space-between;align-items:center">' +
+    '<div style="display:flex;align-items:center;gap:10px">' +
+      '<div style="width:32px;height:32px;background:rgba(255,255,255,0.15);border-radius:6px;display:flex;align-items:center;justify-content:center">' +
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M11 3 L5.5 8 L11 13" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '</div>' +
+      '<span style="color:white;font-size:17px;font-weight:700;letter-spacing:-0.3px">Kríta</span>' +
+      '<span style="color:rgba(255,255,255,0.4);font-size:12px;margin-left:6px">Fyrirframgreidd leiga &mdash; Tilboð</span>' +
+    '</div>' +
+    '<div style="text-align:right">' +
+      '<div style="color:rgba(255,255,255,0.75);font-size:12px">Tilvísun: ' + ref + '</div>' +
+      (pageLabel ? '<div style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:2px">' + pageLabel + '</div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function pdfParties(q, c) {
+  return '<div style="background:white;border:0.5px solid #c8ddd0;border-top:none;padding:18px 24px;margin-bottom:1rem">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;align-items:start">' +
+      '<div>' +
+        '<div style="font-size:10px;font-weight:600;color:#3dca72;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Leigjandi</div>' +
+        '<div style="font-size:16px;font-weight:700">' + (q.tenantName||'&mdash;') + '</div>' +
+        (q.tenantKt ? '<div style="font-size:12px;color:#4a6054;margin-top:2px">kt. ' + q.tenantKt + '</div>' : '') +
+        (q.propertyAddress ? '<div style="font-size:12px;color:#4a6054;margin-top:4px">&#127968; ' + q.propertyAddress + '</div>' : '') +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:10px;font-weight:600;color:#3dca72;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Leigusali</div>' +
+        '<div style="font-size:16px;font-weight:700">' + (q.landlordName||'&mdash;') + '</div>' +
+        (q.landlordKt ? '<div style="font-size:12px;color:#4a6054;margin-top:2px">kt. ' + q.landlordKt + '</div>' : '') +
+        (q.landlordEmail ? '<div style="font-size:12px;color:#4a6054;margin-top:2px">' + q.landlordEmail + '</div>' : '') +
+      '</div>' +
+      '<div style="text-align:right">' +
+        '<div style="font-size:10px;font-weight:600;color:#3dca72;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Greiðsla til leigusala</div>' +
+        '<div style="font-size:24px;font-weight:800;color:#0d3320">' + ISK(c.purchasePrice) + '</div>' +
+        '<div style="font-size:11px;color:#4a6054;margin-top:2px">Greiðist við undirritun</div>' +
+        '<div style="font-size:11px;color:#4a6054;margin-top:1px">Tilboð gildir til ' + expiryDate() + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function pdfKeyNumbers(c) {
+  return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem">' +
+    ['Mánaðarleiga|' + ISK(c.rent) + '|','Fjöldi mánaða|' + c.N + ' mánuðir|','Gjald á mánuð|' + ISK(c.monthlyFee) + '|red','Heildarkostnaður|' + ISK(c.totalFees) + '|red'].map((s,i) => {
+      const [lbl,val,col] = s.split('|');
+      const isGreen = i===0;
+      const bg = isGreen ? '#e8f5ee' : '#f4f6f4';
+      const border = isGreen ? '0.5px solid #9fcfb0' : '0.5px solid rgba(13,51,32,0.12)';
+      const color = col==='red' ? 'color:#c0392b;' : '';
+      return '<div class="pdf-metric" style="background:' + bg + ';border:' + border + ';border-radius:6px;padding:12px 14px">' +
+        '<div style="font-size:10px;font-weight:600;color:#4a6054;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">' + lbl + '</div>' +
+        '<div style="font-size:15px;font-weight:700;' + color + '">' + val + '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+function pdfSchedule(c) {
+  return '<div class="card pdf-table" style="margin-bottom:1rem">' +
+    '<div style="font-size:11px;font-weight:600;color:#4a6054;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">Greiðsluáætlun</div>' +
+    '<div class="table-wrap"><table>' +
+      '<thead><tr>' +
+        '<th style="background:#f4f6f4">#</th><th style="background:#f4f6f4">Dagsetning</th>' +
+        '<th style="background:#f4f6f4">Eftirstöðvar</th><th style="background:#f4f6f4">Kríta gjald</th>' +
+        '<th style="background:#f4f6f4">Leiga</th><th style="background:#f4f6f4">Eftir greiðslu</th>' +
+      '</tr></thead>' +
+      '<tbody>' + c.rows.map(r =>
+        '<tr><td style="color:#4a6054">' + r.month + '</td><td>' + FMT(r.date) + '</td><td>' + ISK(r.opening) + '</td>' +
+        '<td style="color:#c0392b">' + ISK(r.fee) + '</td><td>' + ISK(r.rent) + '</td><td style="font-weight:500">' + ISK(r.closing) + '</td></tr>'
+      ).join('') + '</tbody>' +
+    '</table></div>' +
+  '</div>';
+}
+
+function pdfFooterSummary(c) {
+  return '<div class="pdf-dark-bar" style="background:#0d3320;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1rem">' +
+    '<div style="display:flex;gap:2rem">' +
+      '<div><div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Heildarleigutekjur</div><div style="font-size:14px;font-weight:600;color:white">' + ISK(c.totalRent) + '</div></div>' +
+      '<div><div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Heildarkostnaður</div><div style="font-size:14px;font-weight:600;color:rgba(255,160,140,1)">' + ISK(c.totalFees) + '</div></div>' +
+      '<div><div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Greiðsla til leigusala</div><div style="font-size:14px;font-weight:700;color:#22c55e">' + ISK(c.purchasePrice) + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:rgba(255,255,255,0.3)">krita.is &nbsp;|&nbsp; info@krita.is</div>' +
+  '</div>';
+}
+
+function pdfSignatures(q) {
+  return '<div class="card" style="margin-bottom:1rem">' +
+    '<div style="font-size:11px;font-weight:600;color:#4a6054;text-transform:uppercase;letter-spacing:.07em;margin-bottom:16px">Undirskriftir</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem">' +
+      '<div>' +
+        '<div style="font-size:11px;color:#4a6054;margin-bottom:28px">F.h. leigjanda &mdash; ' + (q.tenantName||'') + '</div>' +
+        '<div class="sig-line" style="border-bottom:1px solid #0d3320;margin-bottom:6px"></div>' +
+        '<div style="font-size:11px;color:#4a6054">Nafn og dagsetning</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:11px;color:#4a6054;margin-bottom:28px">F.h. leigusala &mdash; ' + (q.landlordName||'') + '</div>' +
+        '<div class="sig-line" style="border-bottom:1px solid #0d3320;margin-bottom:6px"></div>' +
+        '<div style="font-size:11px;color:#4a6054">Nafn og dagsetning</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:11px;color:#4a6054;margin-bottom:28px">F.h. Kríta hf.</div>' +
+        '<div class="sig-line" style="border-bottom:1px solid #0d3320;margin-bottom:6px"></div>' +
+        '<div style="font-size:11px;color:#4a6054">Nafn og dagsetning</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function pdfTerms() {
+  return '<div style="font-size:10px;color:#4a6054;line-height:1.6;border-top:0.5px solid rgba(13,51,32,0.12);padding-top:12px">' +
+    '<strong style="color:#0d3320">Skilmálar:</strong> Kríta hf. kaupir framtíðarleigutekjur og greiðir leigusala ' +
+    'tilgreinda fjárhæð við undirritun. Leigjandi greiðir mánaðarlegar leiðréttingargreiðslur beint til Kríta ' +
+    'samkvæmt greiðsluáætlun. Tilboð þetta gildir í 30 daga frá útgáfudegi. Kríta hf., kt. 581218-1250, ' +
+    'Ármúla 13, 105 Reykjavík. Sími: 519-5050. info@krita.is' +
+  '</div>';
+}
+
+/* ---- SINGLE CLIENT HTML ---- */
+function singleClientHTML(q, ref, pageLabel) {
+  const c = calcFromQ(q);
+  return '<div class="print-section">' +
+    pdfHeader(ref, pageLabel||'') +
+    pdfParties(q, c) +
+    pdfKeyNumbers(c) +
+    pdfSchedule(c) +
+    pdfFooterSummary(c) +
+    pdfSignatures(q) +
+    pdfTerms() +
+  '</div>';
+}
+
+/* ---- BUNDLE ---- */
+function renderBundle(quotes) {
+  const ref = _currentRef;
+  const landlord = quotes[0];
+  const grandTotal = quotes.reduce((s,q)=>s+calcFromQ(q).purchasePrice,0);
+  const grandFees  = quotes.reduce((s,q)=>s+calcFromQ(q).totalFees,0);
+  const grandRent  = quotes.reduce((s,q)=>s+calcFromQ(q).totalRent,0);
+
+  let html = '<div class="print-section">' +
+    pdfHeader(ref, '') +
+    '<div style="background:white;border:0.5px solid #c8ddd0;border-top:none;padding:20px 24px;margin-bottom:1rem">' +
+      '<div style="display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:start">' +
+        '<div>' +
+          '<div style="font-size:10px;font-weight:600;color:#3dca72;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Leigusali</div>' +
+          '<div style="font-size:20px;font-weight:700">' + (landlord.landlordName||'&mdash;') + '</div>' +
+          (landlord.landlordKt ? '<div style="font-size:12px;color:#4a6054;margin-top:2px">kt. ' + landlord.landlordKt + '</div>' : '') +
+          '<div style="margin-top:8px;font-size:13px;color:#4a6054">' + quotes.length + ' eignir í tilboði &nbsp;&mdash;&nbsp; Gildir til ' + expiryDate() + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;background:#e8f5ee;border:0.5px solid #9fcfb0;border-radius:8px;padding:16px 20px">' +
+          '<div style="font-size:10px;font-weight:600;color:#0d3320;text-transform:uppercase;letter-spacing:.07em;opacity:.7;margin-bottom:4px">Heildar greiðsla til leigusala</div>' +
+          '<div style="font-size:26px;font-weight:800;color:#0d3320">' + ISK(grandTotal) + '</div>' +
+          '<div style="font-size:11px;color:#4a6054;margin-top:3px">Greiðist við undirritun</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem">' +
+      '<div class="pdf-metric" style="background:#f4f6f4;border:0.5px solid rgba(13,51,32,0.12);border-radius:6px;padding:14px 16px"><div style="font-size:10px;font-weight:600;color:#4a6054;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Heildarleigutekjur</div><div style="font-size:17px;font-weight:700">' + ISK(grandRent) + '</div></div>' +
+      '<div class="pdf-metric" style="background:#f4f6f4;border:0.5px solid rgba(13,51,32,0.12);border-radius:6px;padding:14px 16px"><div style="font-size:10px;font-weight:600;color:#4a6054;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Heildar gjöld</div><div style="font-size:17px;font-weight:700;color:#c0392b">' + ISK(grandFees) + '</div></div>' +
+      '<div class="pdf-metric" style="background:#e8f5ee;border:0.5px solid #9fcfb0;border-radius:6px;padding:14px 16px"><div style="font-size:10px;font-weight:600;color:#0d3320;text-transform:uppercase;letter-spacing:.04em;opacity:.7;margin-bottom:4px">Greiðsla til leigusala</div><div style="font-size:17px;font-weight:700;color:#0d3320">' + ISK(grandTotal) + '</div></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div style="font-size:11px;font-weight:600;color:#4a6054;text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">Samantekt &mdash; allar eignir</div>' +
+      '<div class="table-wrap"><table>' +
+        '<thead><tr><th>#</th><th>Leigjandi / Eign</th><th>Mánaðarleiga</th><th>Mán</th><th>Gjald/mán</th><th>Leigutekjur</th><th>Greiðsla til leigusala</th></tr></thead>' +
+        '<tbody>' + quotes.map((q,i) => {
+          const c = calcFromQ(q);
+          return '<tr><td style="color:#4a6054">' + (i+1) + '</td>' +
+            '<td><div style="font-weight:600">' + (q.tenantName||'&mdash;') + '</div>' +
+            (q.tenantKt ? '<div style="font-size:11px;color:#4a6054">kt. ' + q.tenantKt + '</div>' : '') +
+            (q.propertyAddress ? '<div style="font-size:11px;color:#4a6054">' + q.propertyAddress + '</div>' : '') + '</td>' +
+            '<td>' + ISK(c.rent) + '</td><td>' + c.N + '</td>' +
+            '<td style="color:#c0392b">' + ISK(c.monthlyFee) + '</td>' +
+            '<td>' + ISK(c.totalRent) + '</td>' +
+            '<td style="font-weight:700;color:#0d3320">' + ISK(c.purchasePrice) + '</td></tr>';
+        }).join('') + '</tbody>' +
+        '<tfoot><tr style="border-top:1.5px solid rgba(13,51,32,0.22)"><td colspan="5" style="font-weight:700;padding-top:10px;color:#4a6054">Samtals</td><td style="font-weight:700;padding-top:10px">' + ISK(grandRent) + '</td><td style="font-weight:700;padding-top:10px;color:#0d3320">' + ISK(grandTotal) + '</td></tr></tfoot>' +
+      '</table></div>' +
+    '</div>' +
+    pdfTerms() +
+  '</div>';
+
+  quotes.forEach((q,i) => {
+    html += '<div class="page-break"></div>' + singleClientHTML(q, ref, 'Síða ' + (i+2) + ' af ' + (quotes.length+1));
+  });
+  document.getElementById('clientViewContent').innerHTML = html;
+}
+
+function renderClient(q) {
+  const ref = _currentRef;
+  document.getElementById('clientViewContent').innerHTML = singleClientHTML(q, ref, '');
+}
+
+/* ---- EMAIL ---- */
+function sendEmail() {
+  const el = document.getElementById('landlordEmail');
+  const email = el ? el.value : '';
+  const ref = _currentRef;
+  const subject = 'Kríta – Tilboð í fyrirframgreidda leigu (' + ref + ')';
+  const body = 'Góðan dag,\n\nVið hjá Kríta sendum þér hér með tilboð í fyrirframgreidda leigu.\n\nTilvísun: ' + ref + '\n\nVinsamlegast opnaðu viðhengi eða prentaðu tilboðið úr kerfinu.\n\nKveðja,\nKríta hf.\ninfo@krita.is\nSími: 519-5050';
+  window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+/* ---- SWITCH TAB ---- */
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  const idx = ['calculator','saved','client'].indexOf(name);
+  if(idx >= 0) document.querySelectorAll('.tab')[idx].classList.add('active');
+  if(name === 'client') {
+    _currentRef = offerRef();
+    const all = getAll();
+    const sel = all.filter(q => selectedIds.has(q.id));
+    if(sel.length > 1) renderBundle(sel);
+    else if(sel.length === 1) renderClient(sel[0]);
+    else {
+      const c = calc();
+      renderClient({
+        tenantName: document.getElementById('tenantName').value,
+        tenantKt: document.getElementById('tenantKt').value,
+        propertyAddress: document.getElementById('propertyAddress').value,
+        landlordName: document.getElementById('landlordName').value,
+        landlordKt: document.getElementById('landlordKt').value,
+        landlordEmail: document.getElementById('landlordEmail').value,
+        rent: c.rent, N: c.N, feeRate: c.feeRate*100, startDate: document.getElementById('startDate').value
+      });
+    }
+    const emailBtn = document.getElementById('emailBtn');
+    const em = document.getElementById('landlordEmail').value;
+    if(emailBtn) emailBtn.style.display = em ? 'inline-block' : 'none';
+  }
+  if(name === 'saved') loadSaved();
+}
+
+/* ---- STORAGE ---- */
+function getAll() { try { return JSON.parse(localStorage.getItem('krita_quotes')||'[]'); } catch(e){return[];} }
+function setAll(a) { localStorage.setItem('krita_quotes', JSON.stringify(a)); }
+
+function saveQuote() {
+  const c = calc();
+  const id = 'q_' + Date.now();
+  const q = {
+    id, savedAt: new Date().toISOString(),
+    tenantName: document.getElementById('tenantName').value||'Nafnlaust',
+    tenantKt: document.getElementById('tenantKt').value,
+    propertyAddress: document.getElementById('propertyAddress').value,
+    landlordName: document.getElementById('landlordName').value,
+    landlordKt: document.getElementById('landlordKt').value,
+    landlordEmail: document.getElementById('landlordEmail').value,
+    rent: c.rent, N: c.N, feeRate: c.feeRate*100,
+    startDate: document.getElementById('startDate').value,
+    purchasePrice: c.purchasePrice, totalFees: c.totalFees, monthlyFee: c.monthlyFee
+  };
+  const all = getAll(); all.unshift(q); setAll(all);
+  loadSaved(); showToast('Reikningur vistaður!');
+}
+
+function toggleSelect(id) { if(selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); loadSaved(); }
+function toggleSelectAll() { const all=getAll(); if(selectedIds.size===all.length) selectedIds.clear(); else all.forEach(q=>selectedIds.add(q.id)); loadSaved(); }
+
+function loadSaved() {
+  const all = getAll();
+  document.getElementById('savedCount').textContent = all.length + ' reikningar';
+  const selBtn = document.getElementById('selectAllBtn');
+  selBtn.style.display = all.length ? 'inline-block' : 'none';
+  selBtn.textContent = selectedIds.size===all.length&&all.length ? 'Afvelja alla' : 'Velja alla';
+  const bar = document.getElementById('bundleBar');
+  if(selectedIds.size >= 2) {
+    const sel = all.filter(q=>selectedIds.has(q.id));
+    const gt = sel.reduce((s,q)=>s+calcFromQ(q).purchasePrice,0);
+    bar.style.display = 'block';
+    bar.innerHTML = '<div class="bundle-bar"><div style="font-size:13px"><strong style="font-size:15px">' + selectedIds.size + ' reikningar valdir</strong> &nbsp;&middot;&nbsp; Heildar greiðsla til leigusala: ' + ISK(gt) + '</div><div style="display:flex;gap:8px"><button class="btn btn-sm" onclick="selectedIds.clear();loadSaved()">Hreinsa val</button><button class="btn btn-sm btn-green" onclick="switchTab(\'client\')">Búa til bundle PDF &#8594;</button></div></div>';
+  } else { bar.style.display='none'; bar.innerHTML=''; }
+  const list = document.getElementById('savedList');
+  if(!all.length) { list.innerHTML='<div class="empty-state">Engir vistaðir reikningar enn.</div>'; return; }
+  list.innerHTML = '<div class="saved-list">' + all.map(q =>
+    '<div class="saved-item ' + (selectedIds.has(q.id)?'selected':'') + '">' +
+      '<div class="saved-item-check ' + (selectedIds.has(q.id)?'checked':'') + '" onclick="toggleSelect(\'' + q.id + '\')">' + (selectedIds.has(q.id)?'&#10003;':'') + '</div>' +
+      '<div class="saved-item-info" onclick="toggleSelect(\'' + q.id + '\')">' +
+        '<div class="saved-item-name">' + (q.tenantName||'Nafnlaust') + (q.propertyAddress ? ' &mdash; ' + q.propertyAddress : '') + '</div>' +
+        '<div class="saved-item-meta">' + (q.landlordName?'Leigusali: '+q.landlordName+' &nbsp;&middot;&nbsp; ':'') + q.N + ' mán &nbsp;&middot;&nbsp; ' + ISK(q.rent) + '/mán &nbsp;&middot;&nbsp; Greiðsla: ' + ISK(q.purchasePrice) + '</div>' +
+        '<div class="saved-item-meta" style="margin-top:2px">' + FMT(new Date(q.savedAt)) + '</div>' +
+      '</div>' +
+      '<div class="saved-item-actions">' +
+        '<button class="btn btn-sm" onclick="loadQuote(\'' + q.id + '\')">Opna</button>' +
+        '<button class="btn btn-sm btn-dark" onclick="previewSingle(\'' + q.id + '\')">View</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteQuote(\'' + q.id + '\')">Eyða</button>' +
+      '</div>' +
+    '</div>'
+  ).join('') + '</div>';
+}
+
+function previewSingle(id) { const q=getAll().find(x=>x.id===id); if(!q) return; selectedIds.clear(); renderClient(q); switchTab('client'); }
+
+function loadQuote(id) {
+  const q=getAll().find(x=>x.id===id); if(!q) return;
+  document.getElementById('tenantName').value = q.tenantName||'';
+  document.getElementById('tenantKt').value = q.tenantKt||'';
+  document.getElementById('propertyAddress').value = q.propertyAddress||'';
+  document.getElementById('landlordName').value = q.landlordName||'';
+  document.getElementById('landlordKt').value = q.landlordKt||'';
+  document.getElementById('landlordEmail').value = q.landlordEmail||'';
+  document.getElementById('monthlyRent').value = q.rent;
+  document.getElementById('months').value = q.N;
+  document.getElementById('feeRate').value = q.feeRate;
+  document.getElementById('startDate').value = q.startDate||'';
+  update(); switchTab('calculator');
+}
+
+function deleteQuote(id) { selectedIds.delete(id); setAll(getAll().filter(x=>x.id!==id)); loadSaved(); }
+
+let toastTimer;
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.style.opacity='1'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.opacity='0',2500); }
+
+document.querySelectorAll('#monthlyRent,#months,#feeRate,#startDate').forEach(el=>el.addEventListener('input',update));
+document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+update();
+</script>
+</body>
+</html>
