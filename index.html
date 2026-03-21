@@ -2225,10 +2225,10 @@ async function loadCheckFilesFromSupabase(itemId){
     const prefix=currentClientId+'/'+itemId+'/';
     const {data,error}=await _supa.storage.from('checklist-files').list(currentClientId+'/'+itemId);
     if(error||!data||!data.length)return;
-    const files=data.map(function(f){
-      const {data:urlData}=_supa.storage.from('checklist-files').getPublicUrl(currentClientId+'/'+itemId+'/'+f.name);
-      return {name:f.name,size:formatSize(f.metadata?.size||0),date:FMT(new Date(f.created_at)),url:urlData?.publicUrl||null,fromSupabase:true};
-    });
+    const files=await Promise.all(data.map(async function(f){
+      const {data:urlData}=await _supa.storage.from('checklist-files').createSignedUrl(currentClientId+'/'+itemId+'/'+f.name,3600);
+      return {name:f.name,size:formatSize(f.metadata?.size||0),date:FMT(new Date(f.created_at)),url:urlData?.signedUrl||null,fromSupabase:true};
+    }));
     _storage.setItem('krita_cf_'+currentClientId+'_'+itemId,JSON.stringify(files));
   }catch(e){console.warn('loadCheckFiles villa:',e);}
 }
@@ -2285,6 +2285,8 @@ async function addCheckFile(itemId,input){
     saveChecklist(o);
     if(_supa)_db.saveChecklist(currentClientId,itemId,true,FMT(new Date()));
   }
+  // Refresh checklist svo skrár birtist strax
+  await new Promise(function(r){setTimeout(r,500);}); // bíða eftir Supabase
   renderChecklist();
   showToast(fileArray.length+' skjöl hlaðin upp ✓');
 }
@@ -3308,29 +3310,96 @@ function renderChecklist(){
   el.innerHTML='';
   ITEMS.forEach(function(item){
     var done=o[item.id];
-    var wrap=document.createElement('div');wrap.style.marginBottom='8px';
+    var files=getCheckFiles(item.id);
+    var wrap=document.createElement('div');
+    wrap.style.marginBottom='8px';
+    // Main row
     var row=document.createElement('div');
     row.className='check-item'+(done?' done':'');
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;border:0.5px solid var(--border);background:'+(done?'var(--light)':'white');
+    // Drag & drop support
+    row.addEventListener('dragover',function(e){e.preventDefault();row.style.borderColor='#0d3320';row.style.background='#e8f4ed';});
+    row.addEventListener('dragleave',function(){row.style.borderColor='';row.style.background=done?'var(--light)':'white';});
+    row.addEventListener('drop',(function(id){return function(e){
+      e.preventDefault();row.style.borderColor='';row.style.background=done?'var(--light)':'white';
+      var dt=e.dataTransfer;if(dt&&dt.files&&dt.files.length){addCheckFile(id,{files:dt.files});}
+    };})(item.id));
+    // Checkbox
     var box=document.createElement('div');
     box.className='check-box'+(done?' on':'');
     box.innerHTML=done?'&#10003;':'';
     box.style.cssText='width:18px;height:18px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;'+(done?'background:var(--dark);border-color:var(--dark);color:white;':'');
     (function(id){box.addEventListener('click',function(){toggleCheck(id);});})(item.id);
+    // Text
     var txt=document.createElement('div');txt.style.cssText='flex:1;min-width:0';
     var lbl2=document.createElement('div');lbl2.className='check-label';lbl2.textContent=item.label;
     lbl2.style.cssText='font-size:13px;font-weight:600;cursor:pointer';
     (function(id){lbl2.addEventListener('click',function(){toggleCheck(id);});})(item.id);
     var desc=document.createElement('div');desc.style.cssText='font-size:11px;color:var(--text2);margin-top:1px';desc.textContent=item.desc||'';
     txt.appendChild(lbl2);txt.appendChild(desc);
-    if(done){var dt=document.createElement('div');dt.className='check-date';dt.textContent=done.date||'';row.appendChild(box);row.appendChild(txt);row.appendChild(dt);}
+    // Date if done
+    if(done){var dt2=document.createElement('div');dt2.className='check-date';dt2.textContent=done.date||'';row.appendChild(box);row.appendChild(txt);row.appendChild(dt2);}
     else{row.appendChild(box);row.appendChild(txt);}
-    var flbl=document.createElement('label');flbl.style.cssText='cursor:pointer;margin-left:8px';
-    var ficon=document.createElement('span');ficon.textContent='📎';ficon.style.opacity=getCheckFiles(item.id).length?'1':'0.35';
+    // Upload button
+    var flbl=document.createElement('label');
+    flbl.title='Hlaða upp skjali (eða draga hér)';
+    flbl.style.cssText='cursor:pointer;margin-left:8px;display:flex;align-items:center;gap:3px;padding:4px 8px;border-radius:4px;background:var(--bg2);border:0.5px solid var(--border);font-size:12px;color:var(--text2)';
+    flbl.innerHTML='📎 '+(files.length?'<span style="font-weight:700;color:var(--dark)">'+files.length+'</span>':'Hlaða upp');
     var finput=document.createElement('input');finput.type='file';finput.multiple=true;finput.style.display='none';
     (function(id){finput.addEventListener('change',function(){addCheckFile(id,this);});})(item.id);
-    flbl.appendChild(ficon);flbl.appendChild(finput);row.appendChild(flbl);
-    wrap.appendChild(row);el.appendChild(wrap);
+    flbl.appendChild(finput);
+    row.appendChild(flbl);
+    wrap.appendChild(row);
+    // File list - sýna skrár
+    if(files.length){
+      var flist=document.createElement('div');
+      flist.style.cssText='margin-left:28px;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px';
+      files.forEach(function(f,i){
+        var fi=document.createElement('div');
+        fi.style.cssText='display:flex;align-items:center;gap:6px;background:white;border:0.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)';
+        var fsp=document.createElement('span');fsp.textContent=fileIcon(f.name);fsp.style.fontSize='16px';
+        var fn2=document.createElement('span');fn2.textContent=f.name;
+        fn2.style.cssText='font-weight:500;cursor:pointer;color:var(--dark);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        fn2.title=f.name+(f.date?' — '+f.date:'');
+        (function(id,idx){fn2.addEventListener('click',function(){openCheckFile(id,idx);});})(item.id,i);
+        var fdel=document.createElement('button');fdel.innerHTML='&times;';
+        fdel.style.cssText='border:none;background:none;cursor:pointer;color:#999;font-size:15px;padding:0 2px;line-height:1;flex-shrink:0';
+        fdel.title='Eyða skjali';
+        (function(id,idx){fdel.addEventListener('click',function(e){e.stopPropagation();removeCheckFile(id,idx);});})(item.id,i);
+        fi.appendChild(fsp);fi.appendChild(fn2);fi.appendChild(fdel);
+        flist.appendChild(fi);
+      });
+      wrap.appendChild(flist);
+    } else if(_supa) {
+      // Sækja skrár frá Supabase í bakgrunni og uppfæra UI
+      (function(itemId,wrapEl){
+        loadCheckFilesFromSupabase(itemId).then(function(){
+          var freshFiles=getCheckFiles(itemId);
+          if(freshFiles.length){
+            var flist2=document.createElement('div');
+            flist2.style.cssText='margin-left:28px;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px';
+            freshFiles.forEach(function(f,i){
+              var fi=document.createElement('div');
+              fi.style.cssText='display:flex;align-items:center;gap:6px;background:white;border:0.5px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)';
+              var fsp=document.createElement('span');fsp.textContent=fileIcon(f.name);fsp.style.fontSize='16px';
+              var fn2=document.createElement('span');fn2.textContent=f.name;
+              fn2.style.cssText='font-weight:500;cursor:pointer;color:var(--dark);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+              (function(id,idx){fn2.addEventListener('click',function(){openCheckFile(id,idx);});})(itemId,i);
+              var fdel=document.createElement('button');fdel.innerHTML='&times;';
+              fdel.style.cssText='border:none;background:none;cursor:pointer;color:#999;font-size:15px;padding:0 2px;line-height:1';
+              (function(id,idx){fdel.addEventListener('click',function(e){e.stopPropagation();removeCheckFile(id,idx);});})(itemId,i);
+              fi.appendChild(fsp);fi.appendChild(fn2);fi.appendChild(fdel);
+              flist2.appendChild(fi);
+            });
+            // Uppfæra upload label
+            var lbl3=wrapEl.querySelector('label');
+            if(lbl3)lbl3.innerHTML='📎 <span style="font-weight:700;color:var(--dark)">'+freshFiles.length+'</span>';
+            wrapEl.appendChild(flist2);
+          }
+        }).catch(function(){});
+      })(item.id, wrap);
+    }
+    el.appendChild(wrap);
   });
 }
 
