@@ -1014,6 +1014,24 @@ var _db = {
     if(idx>=0){await _supa.from('paid_months').delete().eq('contract_id',contractId).eq('month_index',monthIndex);}
     else{await _supa.from('paid_months').insert({contract_id:contractId,month_index:monthIndex});}
     return paid;
+  },
+  // Checklist sync
+  async getChecklist(clientId) {
+    if(!_supa){try{return JSON.parse(_storage.getItem('krita_check_'+clientId)||'{}')}catch(e){return{};}}
+    const {data,error}=await _supa.from('checklists').select('*').eq('client_id',clientId);
+    if(error||!data){try{return JSON.parse(_storage.getItem('krita_check_'+clientId)||'{}')}catch(e){return{};}}
+    const o={};
+    data.forEach(function(row){if(row.done)o[row.item_id]={done:true,date:row.done_date||''};});
+    _storage.setItem('krita_check_'+clientId,JSON.stringify(o));
+    return o;
+  },
+  async saveChecklist(clientId,itemId,isDone,date){
+    try{const o=JSON.parse(_storage.getItem('krita_check_'+clientId)||'{}');
+      if(isDone)o[itemId]={done:true,date:date||''};else delete o[itemId];
+      _storage.setItem('krita_check_'+clientId,JSON.stringify(o));}catch(e){}
+    if(!_supa)return;
+    if(isDone){await _supa.from('checklists').upsert({id:clientId+'_'+itemId,client_id:clientId,item_id:itemId,done:true,done_date:date||''});}
+    else{await _supa.from('checklists').delete().eq('client_id',clientId).eq('item_id',itemId);}
   }
 };
 
@@ -1390,7 +1408,13 @@ function showInnerTab(name){
   const idx=names.indexOf(name);
   if(idx>=0)tabs[idx].classList.add('active');
   if(name==='docs')renderDocs();
-  if(name==='checklist')renderChecklist();
+  if(name==='checklist'){
+    if(typeof _db!=='undefined'&&_supa){
+      _db.getChecklist(currentClientId).then(function(){renderChecklist();}).catch(function(){renderChecklist();});
+    } else {
+      renderChecklist();
+    }
+  }
   if(name==='contracts')renderCrmContracts();
 }
 
@@ -2194,35 +2218,84 @@ function renderChecklist(){
 function getCheckFiles(itemId){
   try{return JSON.parse(_storage.getItem('krita_cf_'+currentClientId+'_'+itemId)||'[]')}catch(e){return[]}
 }
+
+async function loadCheckFilesFromSupabase(itemId){
+  if(!_supa)return;
+  try{
+    const prefix=currentClientId+'/'+itemId+'/';
+    const {data,error}=await _supa.storage.from('checklist-files').list(currentClientId+'/'+itemId);
+    if(error||!data||!data.length)return;
+    const files=data.map(function(f){
+      const {data:urlData}=_supa.storage.from('checklist-files').getPublicUrl(currentClientId+'/'+itemId+'/'+f.name);
+      return {name:f.name,size:formatSize(f.metadata?.size||0),date:FMT(new Date(f.created_at)),url:urlData?.publicUrl||null,fromSupabase:true};
+    });
+    _storage.setItem('krita_cf_'+currentClientId+'_'+itemId,JSON.stringify(files));
+  }catch(e){console.warn('loadCheckFiles villa:',e);}
+}
 function saveCheckFiles(itemId,arr){
   _storage.setItem('krita_cf_'+currentClientId+'_'+itemId,JSON.stringify(arr));
 }
-function addCheckFile(itemId,input){
-  const files=getCheckFiles(itemId);
+async function addCheckFile(itemId,input){
   const fileArray=Array.from(input.files);
-  let done=0;
-  fileArray.forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=function(e){
-      files.push({name:f.name,size:formatSize(f.size),date:FMT(new Date()),type:f.type,data:e.target.result});
-      done++;
-      if(done===fileArray.length){
-        saveCheckFiles(itemId,files);
-        const o=getChecklist();
-        if(!o[itemId])o[itemId]={done:true,date:FMT(new Date())};
-        saveChecklist(o);
-        renderChecklist();
-        showToast(fileArray.length+' skjöl bætt við');
-      }
-    };
-    reader.readAsDataURL(f);
-  });
+  if(!fileArray.length)return;
+  showToast('Hleð upp...');
+  
+  for(let i=0;i<fileArray.length;i++){
+    const f=fileArray[i];
+    if(_supa){
+      // Uploada í Supabase Storage
+      try{
+        const path=currentClientId+'/'+itemId+'/'+Date.now()+'_'+f.name;
+        const {data,error}=await _supa.storage.from('checklist-files').upload(path,f,{cacheControl:'3600',upsert:false});
+        if(error){
+          console.error('Storage upload villa:',error);
+          showToast('Villa: '+error.message);
+        } else {
+          // Vista file metadata í checklists töflu
+          const meta={
+            id:currentClientId+'_'+itemId+'_'+Date.now(),
+            client_id:currentClientId,
+            item_id:itemId+'_file',
+            done:true,
+            done_date:path  // nota done_date til að geyma storage path
+          };
+          await _supa.from('checklists').upsert(meta);
+          console.log('Skrá hlaðin upp:',path);
+        }
+      }catch(e){console.error('Upload exception:',e);}
+    } else {
+      // Fallback: localStorage með base64
+      const reader=new FileReader();
+      await new Promise(function(resolve){
+        reader.onload=function(e){
+          const files=getCheckFiles(itemId);
+          files.push({name:f.name,size:formatSize(f.size),date:FMT(new Date()),type:f.type,data:e.target.result});
+          saveCheckFiles(itemId,files);
+          resolve();
+        };
+        reader.readAsDataURL(f);
+      });
+    }
+  }
+  
+  // Haka í gátlista þegar skrá er hlaðin upp
+  const o=getChecklist();
+  if(!o[itemId]){
+    o[itemId]={done:true,date:FMT(new Date())};
+    saveChecklist(o);
+    if(_supa)_db.saveChecklist(currentClientId,itemId,true,FMT(new Date()));
+  }
+  renderChecklist();
+  showToast(fileArray.length+' skjöl hlaðin upp ✓');
 }
 
 function openCheckFile(itemId,idx){
   const files=getCheckFiles(itemId);
   const f=files[idx];
-  if(!f||!f.data)return;
+  if(!f)return;
+  // Supabase Storage URL
+  if(f.url){window.open(f.url,'_blank');return;}
+  if(!f.data)return;
   // Opna í nýjum glugga
   const win=window.open();
   if(f.type&&f.type.startsWith('image/')){
@@ -2238,6 +2311,11 @@ function openCheckFile(itemId,idx){
 }
 function removeCheckFile(itemId,idx){
   const files=getCheckFiles(itemId);
+  // Eyða úr Supabase Storage ef URL er til
+  if(files[idx]&&files[idx].url&&_supa){
+    var path=currentClientId+'/'+itemId+'/'+files[idx].name;
+    _supa.storage.from('checklist-files').remove([path]).then(function(){});
+  }
   files.splice(idx,1);
   saveCheckFiles(itemId,files);
   renderChecklist();
@@ -3259,13 +3337,17 @@ function renderChecklist(){
 // ===== TOGGLECHECK FIX (update stat box) =====
 function toggleCheck(id){
   var o=getChecklist();
-  if(o[id])delete o[id];else o[id]={done:true,date:FMT(new Date())};
+  var isDone=!o[id];
+  var date=FMT(new Date());
+  if(isDone)o[id]={done:true,date:date};else delete o[id];
   saveChecklist(o);
+  // Sync til Supabase í bakgrunni
+  if(typeof _db!=='undefined')_db.saveChecklist(currentClientId,id,isDone,date);
   renderChecklist();
   // Update overview stat box
   var ITEMS=getChecklistItems();
   var done=ITEMS.filter(function(i){return o[i.id];}).length;
-  var pct=Math.round(done/ITEMS.length*100);
+  var pct=ITEMS.length>0?Math.round(done/ITEMS.length*100):0;
   var stat=document.getElementById('crmChecklistStat');
   if(stat)stat.innerHTML='<span style="font-size:18px;font-weight:700">'+done+'</span><span style="font-size:13px;color:var(--text2)">/'+ITEMS.length+'</span>';
   var cbar=document.getElementById('crmChecklistBar');
