@@ -2468,52 +2468,97 @@ async function initFromSupabase(){
 }
 
 // Override saveContract/saveClient/lq_saveQuote til að synca við Supabase
-var _origSC=saveContract;
-function saveContract(){
-  var _savingId=editingContractId;
-  _origSC();
-  if(_supa){
-    var all=getContracts();
-    var latest=_savingId?all.find(function(x){return x.id===_savingId;}):null;
-    if(!latest&&all.length>0)latest=all[0];
-    if(latest)_db.saveContract(latest);
-  }
-}
-var _origSCl=saveClient;
-function saveClient(){
-  var _savingId=editingClientId;
-  _origSCl();
-  if(_supa){
-    var all=getClients();
-    var latest=_savingId?all.find(function(x){return x.id===_savingId;}):null;
-    if(!latest&&all.length>0)latest=all[0];
-    if(latest)_db.saveClient(latest);
-  }
-}
-var _origLqSQ=lq_saveQuote;
-function lq_saveQuote(){
-  _origLqSQ();
-  if(_supa){var all=lq_getAll();if(all.length>0)_db.saveQuote(all[0]);}
-}
-var _origDelC=deleteContract;
-function deleteContract(id){_origDelC(id);if(_supa)_db.deleteContract(id);}
-var _origDelCl=deleteClient;
-function deleteClient(id){_origDelCl(id);if(_supa)_db.deleteClient(id);}
-var _origDelQ=lq_deleteQuote;
-function lq_deleteQuote(id){_origDelQ(id);if(_supa)_db.deleteQuote(id);}
+// saveContract + Supabase sync
+(function(){
+  var _origSaveContract = saveContract;
+  saveContract = function saveContract(){
+    var _savingId = editingContractId;
+    _origSaveContract();
+    if(_supa){
+      var all = getContracts();
+      var latest = _savingId ? all.find(function(x){return x.id===_savingId;}) : null;
+      if(!latest && all.length>0) latest = all[0];
+      if(latest){
+        _db.saveContract(latest).then(function(){
+          console.log('Samningur vistaður í Supabase:', latest.id);
+        }).catch(function(e){
+          console.error('Villa við að vista samning:', e);
+        });
+      }
+    }
+  };
+})();
+// saveClient + Supabase sync
+(function(){
+  var _origSaveClient = saveClient; // vista reference STRAX
+  saveClient = function saveClient(){
+    var _savingId = editingClientId;
+    _origSaveClient(); // kalla original
+    if(_supa){
+      var all = getClients();
+      var latest = _savingId ? all.find(function(x){return x.id===_savingId;}) : null;
+      if(!latest && all.length>0) latest = all[0];
+      if(latest){
+        _db.saveClient(latest).then(function(){
+          console.log('Client vistaður í Supabase:', latest.id);
+        }).catch(function(e){
+          console.error('Villa við að vista client:', e);
+        });
+      }
+    }
+  };
+})();
+// lq_saveQuote + Supabase sync
+(function(){
+  var _origLqSaveQuote = lq_saveQuote;
+  lq_saveQuote = function lq_saveQuote(){
+    _origLqSaveQuote();
+    if(_supa){
+      var all = lq_getAll();
+      if(all.length>0) _db.saveQuote(all[0]);
+    }
+  };
+})();
+// deleteContract + Supabase sync
+(function(){
+  var _origDeleteContract = deleteContract;
+  deleteContract = function deleteContract(id){
+    _origDeleteContract(id);
+    if(_supa) _db.deleteContract(id);
+  };
+})();
+// deleteClient + Supabase sync
+(function(){
+  var _origDeleteClient = deleteClient;
+  deleteClient = function deleteClient(id){
+    _origDeleteClient(id);
+    if(_supa) _db.deleteClient(id);
+  };
+})();
+// lq_deleteQuote + Supabase sync
+(function(){
+  var _origLqDeleteQuote = lq_deleteQuote;
+  lq_deleteQuote = function lq_deleteQuote(id){
+    _origLqDeleteQuote(id);
+    if(_supa) _db.deleteQuote(id);
+  };
+})();
 
 // Override togglePayment til að bruka _db async
-var _origTP=togglePayment;
-function togglePayment(cid,month){
-  if(_supa){
-    _db.togglePaidMonth(cid,month).then(function(){
-      var contract=getContracts().find(function(x){return x.id===cid;});
-      if(contract)document.getElementById('crmPaySchedule').innerHTML=renderPaySchedule(contract);
-    });
-  } else {
-    _origTP(cid,month);
-  }
-}
+// togglePayment + Supabase sync
+(function(){
+  var _origTogglePayment = togglePayment;
+  togglePayment = function togglePayment(cid, month){
+    if(_supa){
+      _db.togglePaidMonth(cid, month).then(function(){
+        var contract = getContracts().find(function(x){return x.id===cid;});
+        if(contract) document.getElementById('crmPaySchedule').innerHTML = renderPaySchedule(contract);
+      });
+    } else {
+      _origTogglePayment(cid, month);
+    }
+  };
+})();
 
 function _init(){
   if(typeof addDemoData==='undefined')return setTimeout(_init,10);
